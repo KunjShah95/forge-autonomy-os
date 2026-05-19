@@ -3,24 +3,45 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { AppLayout } from "@/components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import Agents from "./pages/Agents";
+import CICD from "./pages/CICD";
+import Incidents from "./pages/Incidents";
+import Architecture from "./pages/Architecture";
+import Workflows from "./pages/Workflows";
+import Analytics from "./pages/Analytics";
+import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const Shell = ({ children }: { children: React.ReactNode }) => <AppLayout>{children}</AppLayout>;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/" element={<Shell><Dashboard /></Shell>} />
+            <Route path="/agents" element={<Shell><Agents /></Shell>} />
+            <Route path="/cicd" element={<Shell><CICD /></Shell>} />
+            <Route path="/incidents" element={<Shell><Incidents /></Shell>} />
+            <Route path="/architecture" element={<Shell><Architecture /></Shell>} />
+            <Route path="/workflows" element={<Shell><Workflows /></Shell>} />
+            <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
