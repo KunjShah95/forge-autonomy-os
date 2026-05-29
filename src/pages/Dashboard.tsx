@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { MetricCard, Panel, StatusPill } from "@/components/ui-kit/Panels";
 import { Rocket, ShieldCheck, Activity, Bot, TrendingUp, AlertTriangle, Zap } from "lucide-react";
 import { ServiceGraph } from "@/components/ServiceGraph";
@@ -80,6 +81,34 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Signed-in quick navigation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        {[
+          { title: "The Loop", desc: "Control-cycle overview", to: "/app" },
+          { title: "Agents", desc: "Specialized operator roles", to: "/agents" },
+          { title: "Runbook Live", desc: "Guided automation flows", to: "/workflows" },
+          { title: "Safety Gates", desc: "Rollback and policy rails", to: "/incidents" },
+          { title: "Roadmap", desc: "Delivery plan and momentum", to: "/analytics" },
+        ].map((item) => (
+          <Link
+            key={item.title}
+            to={item.to}
+            className="glass group rounded-2xl p-4 border border-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:border-black/15 hover:shadow-[0_0_26px_hsl(var(--primary)/0.08)]"
+          >
+            <div className="mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Signed-in route</div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-xl tracking-tight text-black">{item.title}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-black text-white flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.35)] transition-transform group-hover:translate-x-1">
+                →
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
 
       {/* Metrics */}

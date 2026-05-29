@@ -15,6 +15,9 @@ from .incident_summary import router as incident_summary_router
 from .demo import router as demo_router
 from .replay import router as replay_router
 from .rbac import router as rbac_router
+from .policy_engine import router as policy_engine_router
+from .workflows import router as workflows_router
+from .chaos import router as chaos_router
 
 app = FastAPI(
     title="Forge Autonomy OS Backend",
@@ -64,3 +67,6 @@ app.include_router(incident_summary_router)
 app.include_router(demo_router)
 app.include_router(replay_router)
 app.include_router(rbac_router)
+app.include_router(policy_engine_router)
+app.include_router(workflows_router)
+app.include_router(chaos_router)

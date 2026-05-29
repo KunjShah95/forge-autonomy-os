@@ -237,39 +237,33 @@ export default function Landing() {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/app" className="text-xs font-medium uppercase tracking-wider text-[#000000] transition-colors hover:text-black/60">
-              Console Dashboard
+            <Link to="/about" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
+              About
             </Link>
-            <a href="#control-loop" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
-              The Loop
-            </a>
-            <a href="#agents" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
-              Agents
-            </a>
-            <a href="#runbook-sim" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
-              Runbook Live
-            </a>
-            <a href="#safety" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
-              Safety Gates
-            </a>
-            <a href="#roadmap" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
-              Roadmap
-            </a>
+            <Link to="/features" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
+              Features
+            </Link>
+            <Link to="/contact" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
+              Contact us
+            </Link>
+            <Link to="/pricing" className="text-xs font-medium uppercase tracking-wider text-[#6F6F6F] transition-colors hover:text-black">
+              Pricing
+            </Link>
           </div>
 
           {/* CTAs */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
-              to="/app"
+              to="/login"
               className="border border-black px-5 py-2 text-xs font-medium uppercase tracking-wider text-[#000000] hover:bg-black hover:text-white transition-all duration-300"
             >
-              Open Console
+              Login
             </Link>
             <Link
-              to="/onboarding"
+              to="/register"
               className="bg-[#000000] px-5 py-2 text-xs font-medium uppercase tracking-wider text-white hover:bg-black/80 transition-all duration-300"
             >
-              Start Setup
+              Register
             </Link>
           </div>
 
@@ -294,41 +288,6 @@ export default function Landing() {
             >
               Console Dashboard
             </Link>
-            <a 
-              href="#control-loop" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-semibold tracking-wide text-[#6F6F6F]"
-            >
-              The Control Loop
-            </a>
-            <a 
-              href="#agents" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-semibold tracking-wide text-[#6F6F6F]"
-            >
-              Autonomous Agents
-            </a>
-            <a 
-              href="#runbook-sim" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-semibold tracking-wide text-[#6F6F6F]"
-            >
-              Interactive Runbook
-            </a>
-            <a 
-              href="#safety" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-semibold tracking-wide text-[#6F6F6F]"
-            >
-              Safety Policies
-            </a>
-            <a 
-              href="#roadmap" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-semibold tracking-wide text-[#6F6F6F]"
-            >
-              Development Roadmap
-            </a>
             <div className="pt-4 border-t border-black/5 flex flex-col gap-3">
               <Link
                 to="/app"
@@ -405,23 +364,22 @@ export default function Landing() {
         {/* Action Buttons */}
         <div className="animate-fade-rise-delay-2 mt-12 flex flex-wrap items-center justify-center gap-4">
           <Link
-            to="/onboarding"
-            className="rounded-full px-10 py-4.5 text-xs font-semibold uppercase tracking-wider text-white bg-black active:scale-98 transition-all duration-300 shadow-[0_0_30px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_44px_hsl(var(--primary)/0.8)] hover:-translate-y-0.5"
+            to="/login"
+            className="inline-flex min-h-14 items-center rounded-full px-12 py-4 text-sm font-semibold uppercase tracking-wider text-white bg-black active:scale-98 transition-all duration-300 shadow-[0_0_30px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_44px_hsl(var(--primary)/0.8)] hover:-translate-y-0.5"
             style={{ backgroundColor: "#000000", color: "#FFFFFF" }}
           >
-            Start Integration — 90s
+            Login
           </Link>
           
           <Link
-            to="/app"
-            className="rounded-full border border-black px-10 py-4.5 text-xs font-semibold uppercase tracking-wider text-black bg-white/50 backdrop-blur-sm transition-all duration-300 shadow-[0_0_18px_hsl(var(--foreground)/0.08)] hover:bg-black hover:text-white hover:shadow-[0_0_28px_hsl(var(--foreground)/0.16)] hover:-translate-y-0.5"
+            to="/register"
+            className="inline-flex min-h-14 items-center rounded-full border border-black px-12 py-4 text-sm font-semibold uppercase tracking-wider text-black bg-white/50 backdrop-blur-sm transition-all duration-300 shadow-[0_0_18px_hsl(var(--foreground)/0.08)] hover:bg-black hover:text-white hover:shadow-[0_0_28px_hsl(var(--foreground)/0.16)] hover:-translate-y-0.5"
           >
-            Open Live Console
+            Register
           </Link>
         </div>
       </section>
 
-      {/* SECTION 01 — THE CONTROL LOOP */}
       <section id="control-loop" className="relative z-10 border-t border-black/5 bg-white py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           {/* Header row */}
@@ -582,14 +540,11 @@ export default function Landing() {
       <section id="safety" className="relative z-10 border-t border-b border-black/5 bg-white py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           {/* Header Row */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
-            <div>
-              <span className="mono text-xs font-medium text-[#6F6F6F] tracking-widest block mb-2">03 / POLICY-BOUNDED DEPLOYMENT</span>
-              <h2 className="font-instrument text-4xl md:text-5xl text-black tracking-tight leading-none">
-                Safety Controls & Action Classes
-              </h2>
-            </div>
-            <p className="text-sm text-[#6F6F6F] max-w-md leading-relaxed">
+          <div className="flex flex-col items-center text-center mb-16 gap-4 max-w-3xl mx-auto">
+            <h2 className="font-instrument text-4xl md:text-5xl text-black tracking-tight leading-none">
+              Safety Controls & Action Classes
+            </h2>
+            <p className="text-sm text-[#6F6F6F] leading-relaxed">
               We separate autonomous authority into distinct classes governed by policy rules, audit persistence, and rollback guarantees.
             </p>
           </div>
@@ -682,7 +637,7 @@ export default function Landing() {
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
             <div>
-              <span className="mono text-xs font-medium text-[#6F6F6F] tracking-widest block mb-2">04 / THE GOLDEN FLOW DEMO</span>
+              <span className="mono text-xs font-medium text-[#6F6F6F] tracking-widest block mb-2">04 / INCIDENT RESPONSE FLOW</span>
               <h2 className="font-instrument text-4xl md:text-5xl text-black tracking-tight leading-none">
                 Interactive Runbook Simulator
               </h2>
@@ -924,140 +879,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* SECTION 07 — PRICING & FAQs */}
-      <section className="relative z-10 border-b border-black/5 bg-white py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          {/* Header Row */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
-            <div>
-              <span className="mono text-xs font-medium text-[#6F6F6F] tracking-widest block mb-2">07 / LICENSING & QUESTIONS</span>
-              <h2 className="font-instrument text-4xl md:text-5xl text-black tracking-tight leading-none">
-                Sizing & Frequently Asked Questions
-              </h2>
-            </div>
-            <p className="text-sm text-[#6F6F6F] max-w-md leading-relaxed">
-              We align with modern engineering scaling rules. Simple monotone licenses based on changes per day, pipelines count, and active environment layers.
-            </p>
-          </div>
-
-          {/* Pricing cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            <div className="border border-black/10 p-8 flex flex-col justify-between hover:border-black transition-colors duration-300 bg-white">
-              <div>
-                <span className="mono text-[10px] text-[#6F6F6F] tracking-wider uppercase block mb-1">Developer Wedge</span>
-                <h3 className="font-instrument text-3xl text-black mb-4">Sandbox Core</h3>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed mb-6">
-                  Perfect for local dev exploration and testing webhook signature ingestion in sandbox repositories.
-                </p>
-                <div className="font-instrument text-5xl text-black mb-6 font-semibold">$0 <span className="text-xs font-sans font-normal text-[#6F6F6F]">/ month</span></div>
-                <ul className="space-y-2 border-t border-black/5 pt-6 text-xs text-[#6F6F6F]">
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Local FastAPI development sandbox</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Synthetic incident simulator</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Timeline visualizer UI</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Bounded mock databases fallback</li>
-                </ul>
-              </div>
-              <Link 
-                to="/onboarding"
-                className="w-full text-center border border-black/25 py-3 text-xs font-semibold uppercase tracking-wider text-black mt-8 hover:bg-black hover:text-white transition-all duration-300"
-              >
-                Sign up free
-              </Link>
-            </div>
-
-            <div className="border border-black-2 border-2 p-8 flex flex-col justify-between hover:border-black shadow-sm transition-colors duration-300 bg-white">
-              <div>
-                <span className="mono text-[10px] text-[#D97706] tracking-wider uppercase block mb-1 font-semibold">Recommended Slice</span>
-                <h3 className="font-instrument text-3xl text-black mb-4">Self-Healing CI</h3>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed mb-6">
-                  Best for engineering squads looking to dramatically slash MTTR by auto-repairing build breaks and test flakiness.
-                </p>
-                <div className="font-instrument text-5xl text-black mb-6 font-semibold">$299 <span className="text-xs font-sans font-normal text-[#6F6F6F]">/ month</span></div>
-                <ul className="space-y-2 border-t border-black/5 pt-6 text-xs text-[#6F6F6F]">
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> All Free features included</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> CI Failure classification (3 archetypes)</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Auto-fix PR generator endpoint</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Bounded Class C auto-reruns</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> 5 Active pipeline targets synced</li>
-                </ul>
-              </div>
-              <Link 
-                to="/onboarding"
-                className="w-full text-center bg-black py-3.5 text-xs font-semibold uppercase tracking-wider text-white mt-8 hover:bg-black/90 transition-all duration-300"
-              >
-                Initiate onboarding
-              </Link>
-            </div>
-
-            <div className="border border-black/10 p-8 flex flex-col justify-between hover:border-black transition-colors duration-300 bg-white">
-              <div>
-                <span className="mono text-[10px] text-[#6F6F6F] tracking-wider uppercase block mb-1">Scale Controls</span>
-                <h3 className="font-instrument text-3xl text-black mb-4">Production Autonomy</h3>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed mb-6">
-                  For organizations shifting to controlled autonomous deployments, canary gates, rollbacks, and full governance audits.
-                </p>
-                <div className="font-instrument text-5xl text-black mb-6 font-semibold">$999 <span className="text-xs font-sans font-normal text-[#6F6F6F]">/ month</span></div>
-                <ul className="space-y-2 border-t border-black/5 pt-6 text-xs text-[#6F6F6F]">
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> All CI features included</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Canary controller & anomaly rollbacks</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Context graph engines (Neo4j, Qdrant)</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Custom Class A/B policy configurations</li>
-                  <li className="flex items-center gap-2"><Check size={12} className="text-black" /> Dedicated SRE incident briefs</li>
-                </ul>
-              </div>
-              <Link 
-                to="/onboarding"
-                className="w-full text-center border border-black/25 py-3 text-xs font-semibold uppercase tracking-wider text-black mt-8 hover:bg-black hover:text-white transition-all duration-300"
-              >
-                Request Enterprise trial
-              </Link>
-            </div>
-          </div>
-
-          {/* FAQ Accordion Lists */}
-          <div className="border-t border-black/5 pt-16 max-w-4xl mx-auto">
-            <h3 className="font-instrument text-3xl text-black text-center mb-12">Frequently Answered Queries</h3>
-            <div className="space-y-8">
-              <div>
-                <h4 className="font-medium text-sm text-black mb-2 flex items-center gap-2">
-                  <span className="text-[#6F6F6F]">Q:</span> Why is this different from existing AI coding copilots?
-                </h4>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed pl-6">
-                  Existing copilots focus entirely on generating raw syntax blocks within an IDE. Forge Autonomy OS operates the entire production loop: ingesting real check failures, normalizing signals, reasoning over active architecture bounds, executing patches, rerunning verify suites, scoring deployment risks, and executing canary rollback sequences autonomously.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-sm text-black mb-2 flex items-center gap-2">
-                  <span className="text-[#6F6F6F]">Q:</span> How do you prevent unsafe, runaway autonomous loop actions?
-                </h4>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed pl-6">
-                  We enforce explicit action class policies (Suggest-Only, Approval-Required, Auto-Execute), safe session-correlation idempotency keys, and blast-radius check limits. Every production mutation must supply a pre-validated automated rollback path. Runaway actions are hard-terminated by policy-as-code controllers if retry bounds are broken.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-sm text-black mb-2 flex items-center gap-2">
-                  <span className="text-[#6F6F6F]">Q:</span> What is the product wedge and core moat?
-                </h4>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed pl-6">
-                  Our wedge product is self-healing CI/CD pipelines that immediately slash MTTR. Our continuous multi-dimensional context engine (integrating the Neo4j dependency/ownership graph, PostgreSQL operational state log, and Qdrant semantic incident memory) makes up the core product moat that no standard generic LLM wrapper can match.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-sm text-black mb-2 flex items-center gap-2">
-                  <span className="text-[#6F6F6F]">Q:</span> Can we audit and replay the system decisions historically?
-                </h4>
-                <p className="text-xs text-[#6F6F6F] leading-relaxed pl-6">
-                  Yes. Every event ingested, reason draft evaluated, decision class chosen, PR generated, and rollback triggered is saved immutably as audit envelopes indexed by unique trace IDs. You can inspect the entire historical chain of actions inside the console or export them as standard markdown briefs.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FINAL MONOTONE FOOTER */}
       <footer className="relative z-10 border-t border-black/10 bg-white py-16">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -1071,14 +892,6 @@ export default function Landing() {
             <p className="text-xs text-[#6F6F6F] mt-2 font-mono">
               The AI-Native Production Operating System for Engineering Teams.
             </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-8 text-xs text-[#6F6F6F] font-mono">
-            <Link to="/app" className="hover:text-black transition-colors">Console Dashboard</Link>
-            <Link to="/onboarding" className="hover:text-black transition-colors">Onboarding Setup</Link>
-            <a href="#control-loop" className="hover:text-black transition-colors">Control Loop</a>
-            <a href="#agents" className="hover:text-black transition-colors">Special Agents</a>
-            <a href="#roadmap" className="hover:text-black transition-colors">Roadmap Index</a>
           </div>
 
           <div className="text-right">

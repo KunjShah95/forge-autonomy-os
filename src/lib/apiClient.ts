@@ -822,6 +822,184 @@ export const apiClient = {
   exportAuditLog: async (): Promise<any[]> => {
     return apiFetchWithFallback<any[]>("/rbac/audit/export", []);
   },
+
+  // ---- Policy-as-Code ----
+
+  listPolicies: async (enabledOnly: boolean = false): Promise<any[]> => {
+    const url = enabledOnly ? "/policy/policies?enabled_only=true" : "/policy/policies";
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getPolicy: async (name: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/policy/policies/${name}`, null);
+  },
+
+  createPolicy: async (policy: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/policy/policies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(policy),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return policy;
+  },
+
+  updatePolicy: async (name: string, policy: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/policy/policies/${name}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(policy),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return policy;
+  },
+
+  deletePolicy: async (name: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/policy/policies/${name}`, { status: "deleted" }, "DELETE");
+  },
+
+  evaluatePolicyAsCode: async (req: any): Promise<any> => {
+    const fallback = {
+      matched_policy: "production-safety",
+      matched_rule: req.risk_score >= 70 ? "high-risk-block" : req.risk_score >= 40 ? "medium-risk-approval" : "high-risk-auto-approve",
+      action_class: req.risk_score >= 70 ? "A" : req.risk_score >= 40 ? "B" : "C",
+      allowed: req.risk_score < 70,
+      requires_approval: req.risk_score >= 30,
+      auto_approved: req.risk_score < 30 && req.confidence >= 0.85,
+      policies_evaluated: 1,
+      description: "Evaluated against applicable policies.",
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/policy/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (res.ok) {
+        isLiveMode = true;
+        return await res.json();
+      }
+    } catch (e) {}
+    return fallback;
+  },
+
+  // ---- Workflows ----
+
+  listWorkflows: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/workflows", []);
+  },
+
+  getWorkflow: async (workflowId: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/workflows/${workflowId}`, null);
+  },
+
+  createWorkflow: async (workflow: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/workflows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(workflow),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return workflow;
+  },
+
+  updateWorkflow: async (workflowId: string, workflow: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/workflows/${workflowId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(workflow),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return workflow;
+  },
+
+  deleteWorkflow: async (workflowId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/workflows/${workflowId}`, { status: "deleted" }, "DELETE");
+  },
+
+  executeWorkflow: async (workflowId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/workflows/${workflowId}/execute`, { status: "completed", steps: [] }, "POST");
+  },
+
+  // ---- Chaos Engineering ----
+
+  injectFault: async (req: any): Promise<any> => {
+    const fallback = {
+      id: `fault-${Math.random().toString(36).substr(2, 8)}`,
+      service: req.service,
+      fault_type: req.fault_type,
+      duration_seconds: req.duration_seconds,
+      intensity: req.intensity,
+      target_percentage: req.target_percentage || 100,
+      status: "active",
+      started_at: new Date().toISOString(),
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/chaos/faults`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (res.ok) {
+        isLiveMode = true;
+        return await res.json();
+      }
+    } catch (e) {}
+    return fallback;
+  },
+
+  listActiveFaults: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/chaos/faults", []);
+  },
+
+  stopFault: async (faultId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/chaos/faults/${faultId}/stop`, { status: "stopped" }, "POST");
+  },
+
+  simulateFaultImpact: async (faultId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/chaos/faults/${faultId}/simulate`, {
+      p99_latency_ms: 1200, error_rate_pct: 15.5
+    }, "POST");
+  },
+
+  listResilienceTests: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/chaos/tests", []);
+  },
+
+  getResilienceTest: async (testId: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/chaos/tests/${testId}`, null);
+  },
+
+  createResilienceTest: async (test: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chaos/tests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(test),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return test;
+  },
+
+  runResilienceTest: async (testId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/chaos/tests/${testId}/run`, { status: "completed" }, "POST");
+  },
+
+  getChaosSummary: async (): Promise<any> => {
+    return apiFetchWithFallback<any>("/chaos/summary", {
+      active_faults: 0, completed_tests: 3, services_affected: [],
+      overall_resilience_score: 75, last_test_at: null,
+    });
+  },
 };
 
 // Helper for simple GET/POST with fallback

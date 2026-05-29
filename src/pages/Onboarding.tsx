@@ -72,10 +72,12 @@ const Onboarding = () => {
         </div>
 
         <div className="flex justify-between mt-6">
-          <button onClick={() => i === 0 ? nav("/login") : setI(i - 1)} className="mono text-xs px-3 py-2 rounded-md border border-border">← Back</button>
+          <button onClick={() => i === 0 ? nav("/login") : setI(i - 1)} className="inline-flex min-h-12 items-center rounded-full border border-black/10 px-5 py-3 text-xs font-semibold uppercase tracking-wider transition-all hover:bg-black hover:text-white">
+            ← Back
+          </button>
           <button
             onClick={() => i === steps.length - 1 ? nav("/app") : setI(i + 1)}
-            className="mono text-xs px-4 py-2 rounded-md bg-gradient-to-r from-primary to-accent text-primary-foreground flex items-center gap-1.5">
+            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-6 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_42px_hsl(var(--primary)/0.7)]">
             <Sparkles className="h-3 w-3" /> {i === steps.length - 1 ? "Enter ForgeAI" : "Continue"}
           </button>
         </div>

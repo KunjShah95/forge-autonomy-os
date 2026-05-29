@@ -15,9 +15,15 @@ import Architecture from "./pages/Architecture";
 import Workflows from "./pages/Workflows";
 import Analytics from "./pages/Analytics";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import About from "./pages/About";
+import Features from "./pages/Features";
+import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
+import PolicyManagement from "./pages/PolicyManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +47,12 @@ const App = () => {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/onboarding" element={<Onboarding />} />
               
               {/* Application Shell Routes */}
@@ -52,6 +63,7 @@ const App = () => {
               <Route path="/architecture" element={<Shell><Architecture /></Shell>} />
               <Route path="/workflows" element={<Shell><Workflows /></Shell>} />
               <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
+              <Route path="/policies" element={<Shell><PolicyManagement /></Shell>} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />
