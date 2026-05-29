@@ -17,7 +17,7 @@ import re
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1/policy", tags=["Policy-as-Code"])
 
@@ -55,8 +55,8 @@ class PolicyDefinition(BaseModel):
     environments: List[str] = Field(default_factory=list)  # ["production", "staging"]
     rules: List[PolicyRule] = Field(default_factory=list)
     default_action_class: str = "B"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class PolicyStore(BaseModel):
@@ -238,12 +238,12 @@ for name, policy in SEED_POLICIES.items():
 # ---------------------------------------------------------------------------
 
 @router.get("/policies", response_model=List[PolicyDefinition])
-def list_policies(enabled_only: bool = False):
+def list_policies(enabled_only: bool = False, limit: int = 50, offset: int = 0):
     """List all defined policies."""
     policies = list(_policy_store.policies.values())
     if enabled_only:
         policies = [p for p in policies if p.enabled]
-    return policies
+    return policies[offset:offset + limit]
 
 
 @router.get("/policies/{name}", response_model=Optional[PolicyDefinition])
@@ -257,8 +257,8 @@ def create_policy(policy: PolicyDefinition):
     """Create a new policy definition."""
     if policy.name in _policy_store.policies:
         raise HTTPException(status_code=409, detail=f"Policy '{policy.name}' already exists")
-    policy.created_at = datetime.utcnow()
-    policy.updated_at = datetime.utcnow()
+    policy.created_at = datetime.now(timezone.utc)
+    policy.updated_at = datetime.now(timezone.utc)
     _policy_store.policies[policy.name] = policy
     return policy
 
@@ -268,7 +268,7 @@ def update_policy(name: str, policy: PolicyDefinition):
     """Update an existing policy definition."""
     if name not in _policy_store.policies:
         raise HTTPException(status_code=404, detail=f"Policy '{name}' not found")
-    policy.updated_at = datetime.utcnow()
+    policy.updated_at = datetime.now(timezone.utc)
     _policy_store.policies[name] = policy
     return policy
 

@@ -7,7 +7,7 @@ Progressive rollout control with automatic rollback on anomaly detection.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Canary"])
 
@@ -39,8 +39,8 @@ class CanaryStatus(BaseModel):
     error_budget_burn_rate: float = 0.0
     should_auto_rollback: bool = False
     steps: List[Dict[str, Any]] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Simulated canary state
@@ -112,7 +112,7 @@ def promote_canary(canary_id: str):
         canary.current_percentage = next_step["percentage"]
         canary.status = "promoting" if next_step["percentage"] < 100 else "deployed"
 
-    canary.updated_at = datetime.utcnow()
+    canary.updated_at = datetime.now(timezone.utc)
     _canaries[canary_id] = canary
     return canary
 
@@ -126,7 +126,7 @@ def rollback_canary(canary_id: str):
 
     canary.status = "rolled_back"
     canary.current_percentage = 0
-    canary.updated_at = datetime.utcnow()
+    canary.updated_at = datetime.now(timezone.utc)
 
     # Mark all steps as rolled back
     for step in canary.steps:
@@ -143,6 +143,7 @@ def get_canary_status(canary_id: str):
 
 
 @router.get("/canaries", response_model=List[CanaryStatus])
-def list_canaries():
+def list_canaries(limit: int = 50, offset: int = 0):
     """List all canary deployments."""
-    return list(_canaries.values())
+    result = list(_canaries.values())
+    return result[offset:offset + limit]

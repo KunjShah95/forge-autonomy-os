@@ -9,7 +9,7 @@ import re
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Classifier"])
 
@@ -30,7 +30,7 @@ class ClassificationResult(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     evidence: List[str] = Field(default_factory=list)
     summary: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Bot, GitBranch, Siren, Network, Workflow, BarChart3, Settings, Sparkles, Shield } from "lucide-react";
+import { LayoutDashboard, Bot, GitBranch, Siren, Network, Workflow, BarChart3, Settings, Sparkles, Shield, CalendarDays, Activity, Waypoints } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -9,8 +9,11 @@ const nav = [
   { to: "/incidents", label: "Incidents", icon: Siren },
   { to: "/architecture", label: "Architecture", icon: Network },
   { to: "/workflows", label: "Workflows", icon: Workflow },
+  { to: "/sprints", label: "Sprints", icon: CalendarDays },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/timeline", label: "Timeline", icon: Waypoints },
   { to: "/policies", label: "Policies", icon: Shield },
+  { to: "/pilot", label: "Pilot", icon: Activity },
 ];
 
 export const AppSidebar = () => {

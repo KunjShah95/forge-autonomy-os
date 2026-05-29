@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .schemas import EventSchema, DecisionSchema, AuditSchema
+from .persistence_sync import sync_event, sync_decision
 
 router = APIRouter(prefix="/api/v1")
 
@@ -15,7 +16,7 @@ audit_db: Dict[str, AuditSchema] = {}  # Keyed by trace_id
 # Seed initial mock data for seamless demo
 def seed_mock_data():
     # Helper to create timestamps
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     # 1. Incident 1: Elevated latency on billing-svc
     t1 = "trace-billing-101"
@@ -88,12 +89,15 @@ seed_mock_data()
 def ingest_event(event: EventSchema):
     events_db.append(event)
     
+    # Persist to SQLite
+    sync_event(event.trace_id, event.source, event.type, event.payload or {})
+    
     # Update or insert into the audit trail
     if event.trace_id not in audit_db:
         audit_db[event.trace_id] = AuditSchema(
             trace_id=event.trace_id,
             events=[event],
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
     else:
         audit_db[event.trace_id].events.append(event)
@@ -104,12 +108,15 @@ def ingest_event(event: EventSchema):
 def create_decision(decision: DecisionSchema):
     decisions_db.append(decision)
     
+    # Persist to SQLite
+    sync_decision(decision)
+    
     # Update audit trail
     if decision.trace_id not in audit_db:
         audit_db[decision.trace_id] = AuditSchema(
             trace_id=decision.trace_id,
             decisions=[decision],
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
     else:
         audit_db[decision.trace_id].decisions.append(decision)
@@ -117,31 +124,34 @@ def create_decision(decision: DecisionSchema):
     return decision
 
 @router.get("/events", response_model=List[EventSchema])
-def get_events(trace_id: Optional[str] = None):
+def get_events(trace_id: Optional[str] = None, limit: int = 50, offset: int = 0):
     """Retrieve events, optionally filtered by trace_id."""
     if trace_id:
-        return [e for e in events_db if e.trace_id == trace_id]
-    return sorted(events_db, key=lambda e: e.timestamp, reverse=True)
+        result = [e for e in events_db if e.trace_id == trace_id]
+    else:
+        result = sorted(events_db, key=lambda e: e.timestamp, reverse=True)
+    return result[offset:offset + limit]
 
 
 @router.get("/decisions", response_model=List[DecisionSchema])
-def get_decisions():
-    return decisions_db
+def get_decisions(limit: int = 50, offset: int = 0):
+    return decisions_db[offset:offset + limit]
 
 @router.get("/audit", response_model=List[AuditSchema])
-def get_audit(trace_id: Optional[str] = None):
+def get_audit(trace_id: Optional[str] = None, limit: int = 50, offset: int = 0):
     if trace_id:
         if trace_id in audit_db:
             return [audit_db[trace_id]]
         return []
     # Return all audit entries sorted by timestamp descending
-    return sorted(audit_db.values(), key=lambda x: x.timestamp, reverse=True)
+    result = sorted(audit_db.values(), key=lambda x: x.timestamp, reverse=True)
+    return result[offset:offset + limit]
 
 @router.post("/simulate", response_model=AuditSchema)
 def simulate_event():
     # Simulate a brand new synthetic agent action workflow
     trace_id = f"sim-{str(uuid.uuid4())[:8]}"
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 1. Event: CPU spikes on search service
     sim_event = EventSchema(

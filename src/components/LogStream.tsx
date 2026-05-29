@@ -72,9 +72,59 @@ export const LogStream = ({ max = 12 }: { max?: number }) => {
     seed.slice(0, max).map(e => ({...e, t: e.t}))
   );
 
-  // Load API events on mount and periodically
+  // Try SSE first, fall back to polling
   useEffect(() => {
+    let eventSource: EventSource | null = null;
+    let sseFailed = false;
+
+    const trySse = () => {
+      try {
+        eventSource = new EventSource("http://localhost:8000/api/v1/stream");
+
+        eventSource.addEventListener("init", (e: MessageEvent) => {
+          try {
+            const payload = JSON.parse(e.data);
+            if (payload.events) {
+              setItems(payload.events.slice(0, max));
+            }
+          } catch {}
+        });
+
+        eventSource.addEventListener("ambient", (e: MessageEvent) => {
+          try {
+            const payload = JSON.parse(e.data);
+            setItems(prev => [{
+              t: payload.t || new Date().toISOString().slice(11, 19),
+              agent: payload.agent,
+              msg: payload.msg,
+              level: payload.level || "info",
+            }, ...prev].slice(0, max));
+          } catch {}
+        });
+
+        eventSource.addEventListener("snapshot", (e: MessageEvent) => {
+          try {
+            const payload = JSON.parse(e.data);
+            if (payload.events) {
+              setItems(payload.events.slice(0, max));
+            }
+          } catch {}
+        });
+
+        eventSource.onerror = () => {
+          eventSource?.close();
+          sseFailed = true;
+        };
+      } catch {
+        sseFailed = true;
+      }
+    };
+
+    trySse();
+
+    // Fallback: load API events via polling if SSE fails
     const loadEvents = async () => {
+      if (!sseFailed) return; // SSE still active, skip polling
       const events = await apiClient.getEvents();
       if (events.length > 0) {
         const formatted = events.map((e: ApiEvent) => ({
@@ -87,17 +137,24 @@ export const LogStream = ({ max = 12 }: { max?: number }) => {
       }
     };
 
+    // Start polling immediately as a safety net
     loadEvents();
     const loadInterval = setInterval(loadEvents, 8000);
-    return () => clearInterval(loadInterval);
+
+    return () => {
+      eventSource?.close();
+      clearInterval(loadInterval);
+    };
   }, [max]);
 
-  // Simulated periodic extras for ambient liveliness
+  // Simulated periodic extras for ambient liveliness (always active)
   useEffect(() => {
     const id = setInterval(() => {
-      const e = extras[Math.floor(Math.random() * extras.length)];
-      const t = new Date().toISOString().slice(11, 19);
-      setItems(prev => [{ t, ...e }, ...prev].slice(0, max));
+      setItems(prev => {
+        const e = extras[Math.floor(Math.random() * extras.length)];
+        const t = new Date().toISOString().slice(11, 19);
+        return [{ t, ...e }, ...prev].slice(0, max);
+      });
     }, 2400);
     return () => clearInterval(id);
   }, [max]);

@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forge-nats-config
+  namespace: forge-autonomy-os
+data:
+  nats.conf: |
+    port: 4222
+    http_port: 8222
+    cluster {
+      port: 6222
+    }
+    jetstream {
+      store_dir: /data/jetstream
+      max_memory_store: 128MB
+      max_file_store: 1GB
+    }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: forge-nats
+  namespace: forge-autonomy-os
+  labels:
+    app: forge-nats
+    component: messaging
+spec:
+  serviceName: forge-nats
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forge-nats
+  template:
+    metadata:
+      labels:
+        app: forge-nats
+        component: messaging
+    spec:
+      containers:
+        - name: nats
+          image: nats:2.10-alpine
+          args:
+            - "--config"
+            - "/etc/nats/nats.conf"
+          ports:
+            - containerPort: 4222
+              name: client
+            - containerPort: 8222
+              name: http
+            - containerPort: 6222
+              name: cluster
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nats
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap:
+            name: forge-nats-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forge-nats
+  namespace: forge-autonomy-os
+  labels:
+    app: forge-nats
+spec:
+  selector:
+    app: forge-nats
+  ports:
+    - name: client
+      port: 4222
+      targetPort: 4222
+    - name: http
+      port: 8222
+      targetPort: 8222
+  clusterIP: None

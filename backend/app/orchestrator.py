@@ -7,7 +7,7 @@ Triggers CI reruns after repair PR creation via GitHub API simulation.
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Orchestrator"])
 
@@ -26,7 +26,7 @@ class RerunResult(BaseModel):
     new_run_id: Optional[int] = None
     workflow_url: str = ""
     message: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Simulated rerun state
@@ -36,7 +36,7 @@ _reruns: Dict[str, RerunResult] = {}
 @router.post("/rerun", response_model=RerunResult)
 def trigger_rerun(req: RerunRequest):
     """Trigger a workflow rerun for the given branch/trace."""
-    new_id = hash(f"{req.trace_id}:{datetime.utcnow().isoformat()}") % 100000
+    new_id = hash(f"{req.trace_id}:{datetime.now(timezone.utc).isoformat()}") % 100000
     result = RerunResult(
         trace_id=req.trace_id,
         status="triggered",

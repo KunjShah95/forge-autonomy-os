@@ -3,7 +3,7 @@
 import json
 import hmac
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from app.main import app

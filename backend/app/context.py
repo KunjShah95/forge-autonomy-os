@@ -8,7 +8,7 @@ Designed as a drop-in that can be swapped for Postgres later.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from .schemas import EventSchema, DecisionSchema
@@ -30,7 +30,7 @@ class IncidentSchema(BaseModel):
     trace_id: str = ""
     description: str = ""
     evidence: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     resolved_at: Optional[datetime] = None
     mttr_minutes: Optional[int] = None
 
@@ -61,7 +61,7 @@ _incidents["INC-2847"] = IncidentSchema(
     trace_id="trace-billing-101",
     description="p99 latency spiked to 950ms (threshold 250ms) after deploying billing-svc v1.22.0",
     evidence={"p99": "950ms", "error_rate": "12.4%", "threshold": "250ms"},
-    created_at=datetime.utcnow() - timedelta(minutes=12),
+    created_at=datetime.now(timezone.utc) - timedelta(minutes=12),
 )
 _incidents["INC-2846"] = IncidentSchema(
     id="INC-2846",
@@ -73,7 +73,7 @@ _incidents["INC-2846"] = IncidentSchema(
     trace_id="trace-ml-102",
     description="ML inference queue depth exceeded safe operational threshold",
     evidence={"queue_depth": "1420", "threshold": "500", "max_capacity": "500"},
-    created_at=datetime.utcnow() - timedelta(minutes=31),
+    created_at=datetime.now(timezone.utc) - timedelta(minutes=31),
 )
 _incidents["INC-2845"] = IncidentSchema(
     id="INC-2845",
@@ -84,8 +84,8 @@ _incidents["INC-2845"] = IncidentSchema(
     service="auth-svc",
     trace_id="trace-auth-103",
     description="Auth token TTL drifted beyond acceptable bounds, auto-remediated",
-    created_at=datetime.utcnow() - timedelta(hours=1),
-    resolved_at=datetime.utcnow() - timedelta(minutes=45),
+    created_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    resolved_at=datetime.now(timezone.utc) - timedelta(minutes=45),
     mttr_minutes=15,
 )
 
@@ -106,14 +106,15 @@ _ownerships = {
 # ---------------------------------------------------------------------------
 
 @router.get("/incidents", response_model=List[IncidentSchema])
-def list_incidents(service: Optional[str] = None, status: Optional[str] = None):
+def list_incidents(service: Optional[str] = None, status: Optional[str] = None, limit: int = 50, offset: int = 0):
     """List incidents with optional filtering."""
     incidents = list(_incidents.values())
     if service:
         incidents = [i for i in incidents if i.service == service]
     if status:
         incidents = [i for i in incidents if i.status == status]
-    return sorted(incidents, key=lambda x: x.created_at, reverse=True)
+    result = sorted(incidents, key=lambda x: x.created_at, reverse=True)
+    return result[offset:offset + limit]
 
 
 @router.get("/incidents/{incident_id}", response_model=Optional[IncidentSchema])

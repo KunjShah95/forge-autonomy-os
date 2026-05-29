@@ -8,7 +8,7 @@ based on blast radius, risk score, and confidence thresholds.
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Policy"])
 
@@ -33,7 +33,7 @@ class PolicyEvaluationResult(BaseModel):
     requires_approval: bool
     reason: str
     conditions: List[str] = Field(default_factory=list)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

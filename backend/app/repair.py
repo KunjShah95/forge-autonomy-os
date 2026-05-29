@@ -1,14 +1,14 @@
 """
-Auto-fix PR generation (B-007).
+Auto-fix PR generation (B-007) + GitHub PR creation (B-036).
 
 Generates repair patches for common CI failure classes,
-starting with dependency mismatch remediation.
+and optionally creates actual GitHub pull requests with the fixes.
 """
 
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
-from fastapi import APIRouter
-from datetime import datetime
+from fastapi import APIRouter, HTTPException
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Repair"])
 
@@ -34,7 +34,33 @@ class RepairSuggestion(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     pr_title: str = ""
     pr_body: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class CreatePRRequest(BaseModel):
+    """Request to create a GitHub pull request from a repair suggestion."""
+    repo_owner: str
+    repo_name: str
+    file_path: str
+    file_content: str
+    pr_title: str
+    pr_body: str
+    commit_message: str = "fix: auto-generated repair patch"
+    fix_type: str = "fix"
+    base_branch: str = "main"
+    service: str = ""
+    draft: bool = False
+
+
+class CreatePRResult(BaseModel):
+    """Result of creating a GitHub pull request."""
+    pr_url: str = ""
+    pr_number: int = 0
+    branch_name: str = ""
+    file_sha: Optional[str] = None
+    status: str = ""
+    success: bool = True
+    message: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -232,4 +258,59 @@ def generate_repair(req: RepairRequest):
             confidence=0.1,
             pr_title="",
             pr_body="",
+        )
+
+
+# ---------------------------------------------------------------------------
+# B-036: GitHub PR creation
+# ---------------------------------------------------------------------------
+
+@router.post("/pr/create", response_model=CreatePRResult)
+async def create_pr_from_repair_endpoint(req: CreatePRRequest):
+    """
+    Create an actual GitHub pull request from a repair suggestion.
+
+    Requires the GITHUB_TOKEN environment variable to be set.
+    The endpoint will:
+      1. Create a new branch from the base branch
+      2. Write the provided file content to the repository
+      3. Open a PR with the provided title and body
+
+    Returns the PR URL, number, and status.
+    If GITHUB_TOKEN is not configured, returns a descriptive error
+    (no fallback mock PR is created — the caller should handle this).
+    """
+    try:
+        from .github_client import create_pr_from_repair as _create_pr
+
+        result = await _create_pr(
+            owner=req.repo_owner,
+            repo=req.repo_name,
+            file_path=req.file_path,
+            file_content=req.file_content,
+            pr_title=req.pr_title,
+            pr_body=req.pr_body,
+            commit_message=req.commit_message,
+            fix_type=req.fix_type,
+            base_branch=req.base_branch,
+            service=req.service,
+            draft=req.draft,
+        )
+
+        return CreatePRResult(
+            pr_url=result["pr_url"],
+            pr_number=result["pr_number"],
+            branch_name=result["branch_name"],
+            file_sha=result.get("file_sha"),
+            status=result["status"],
+            success=True,
+            message=f"PR #{result['pr_number']} created successfully",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"GitHub API error: {e}",
         )

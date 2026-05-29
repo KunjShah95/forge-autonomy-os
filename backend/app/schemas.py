@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class EventSchema(BaseModel):
     source: str
     type: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     trace_id: str
     payload: Dict[str, Any] = Field(default_factory=dict)
 
@@ -18,7 +18,7 @@ class DecisionSchema(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     risk: int = Field(..., ge=0, le=100)
     evidence: Dict[str, Any] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AuditSchema(BaseModel):
     trace_id: str
@@ -26,4 +26,4 @@ class AuditSchema(BaseModel):
     decisions: List[DecisionSchema] = Field(default_factory=list)
     status: str = "INVESTIGATING"  # "INVESTIGATING", "RESOLVED", "FAILED"
     outcome: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

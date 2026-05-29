@@ -8,7 +8,7 @@ and dependency cycles in the service graph.
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Guardian"])
 
@@ -35,7 +35,7 @@ class GuardianCheckResult(BaseModel):
     trace_id: str
     findings: List[Finding] = Field(default_factory=list)
     overall_health_score: int = Field(default=100, ge=0, le=100)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

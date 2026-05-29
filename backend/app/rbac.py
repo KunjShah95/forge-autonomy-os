@@ -8,7 +8,7 @@ role checks on action execution, and admin audit export.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Header, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(prefix="/api/v1", tags=["RBAC"])
@@ -39,7 +39,7 @@ class RoleCheckResult(BaseModel):
     organization: str
     role: str = ""
     reason: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class Permission(BaseModel):
@@ -50,7 +50,7 @@ class Permission(BaseModel):
 class TenantInfo(BaseModel):
     organization: str
     users: List[User] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

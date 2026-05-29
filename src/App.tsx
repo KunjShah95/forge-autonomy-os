@@ -24,6 +24,9 @@ import Features from "./pages/Features";
 import Contact from "./pages/Contact";
 import Pricing from "./pages/Pricing";
 import PolicyManagement from "./pages/PolicyManagement";
+import SprintPlanning from "./pages/SprintPlanning";
+import PilotDashboard from "./pages/PilotDashboard";
+import CollaborationTimeline from "./pages/CollaborationTimeline";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +67,9 @@ const App = () => {
               <Route path="/workflows" element={<Shell><Workflows /></Shell>} />
               <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
               <Route path="/policies" element={<Shell><PolicyManagement /></Shell>} />
+          <Route path="/sprints" element={<Shell><SprintPlanning /></Shell>} />
+          <Route path="/pilot" element={<Shell><PilotDashboard /></Shell>} />
+          <Route path="/timeline" element={<Shell><CollaborationTimeline /></Shell>} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

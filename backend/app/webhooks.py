@@ -11,11 +11,14 @@ import hashlib
 import json
 import os
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request, HTTPException, Header
 from .schemas import EventSchema
 from .api import events_db, audit_db, AuditSchema
+
+# B-035: NATS event bus for real-time event distribution
+from .event_bus import publish_event, NATS_ENABLED
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
@@ -84,7 +87,7 @@ def normalize_pull_request(
     return EventSchema(
         source="github",
         type=event_type,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         trace_id=delivery_id,
         payload={
             "pr_number": pr.get("number"),
@@ -117,7 +120,7 @@ def normalize_check_suite(
     return EventSchema(
         source="github",
         type=event_type,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         trace_id=delivery_id,
         payload={
             "head_branch": suite.get("head_branch"),
@@ -148,7 +151,7 @@ def normalize_workflow_run(
     return EventSchema(
         source="github",
         type=event_type,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         trace_id=delivery_id,
         payload={
             "workflow_name": run.get("name"),
@@ -237,12 +240,22 @@ async def github_webhook(
     # Persist to in-memory stores
     events_db.append(event)
 
+    # B-035: Publish to NATS event bus if enabled
+    if NATS_ENABLED:
+        import asyncio
+        asyncio.create_task(publish_event(
+            trace_id=event.trace_id,
+            source="github",
+            event_type=event.type,
+            payload=event.payload,
+        ))
+
     # Create or update audit trail entry for this delivery
     if event.trace_id not in audit_db:
         audit_db[event.trace_id] = AuditSchema(
             trace_id=event.trace_id,
             events=[event],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
     else:
         audit_db[event.trace_id].events.append(event)

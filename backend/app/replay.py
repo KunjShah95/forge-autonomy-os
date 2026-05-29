@@ -8,7 +8,7 @@ Supports pause/resume/step controls.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .api import events_db, decisions_db, audit_db
 
@@ -30,7 +30,7 @@ class ReplaySession(BaseModel):
     current_step: int = 0
     total_steps: int = 0
     steps: List[Dict[str, Any]] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # In-memory replay sessions

@@ -13,7 +13,7 @@ Fault injection endpoints for:
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import random
 
@@ -43,7 +43,7 @@ class ActiveFault(BaseModel):
     intensity: float
     target_percentage: float
     status: str  # active | completed | failed | stopped
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     trace_id: str = ""
 
@@ -59,7 +59,7 @@ class ResilienceTest(BaseModel):
     status: str = "pending"  # pending | running | passed | failed
     services_affected: List[str] = Field(default_factory=list)
     metrics: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
 
 
@@ -196,12 +196,12 @@ def inject_fault(req: FaultInjectionRequest):
 
 
 @router.get("/faults", response_model=List[ActiveFault])
-def list_active_faults(status: Optional[str] = None):
+def list_active_faults(status: Optional[str] = None, limit: int = 50, offset: int = 0):
     """List all active faults, optionally filtered by status."""
     faults = list(_active_faults.values())
     if status:
         faults = [f for f in faults if f.status == status]
-    return faults
+    return faults[offset:offset + limit]
 
 
 @router.post("/faults/{fault_id}/stop", response_model=ActiveFault)
@@ -211,7 +211,7 @@ def stop_fault(fault_id: str):
     if not fault:
         raise HTTPException(status_code=404, detail="Fault not found")
     fault.status = "stopped"
-    fault.completed_at = datetime.utcnow()
+    fault.completed_at = datetime.now(timezone.utc)
     _active_faults[fault_id] = fault
     return fault
 
@@ -246,12 +246,13 @@ def create_resilience_test(test: ResilienceTest):
 
 
 @router.get("/tests", response_model=List[ResilienceTest])
-def list_resilience_tests(status: Optional[str] = None):
+def list_resilience_tests(status: Optional[str] = None, limit: int = 50, offset: int = 0):
     """List all resilience tests."""
     tests = list(_resilience_tests.values())
     if status:
         tests = [t for t in tests if t.status == status]
-    return sorted(tests, key=lambda t: t.created_at, reverse=True)
+    result = sorted(tests, key=lambda t: t.created_at, reverse=True)
+    return result[offset:offset + limit]
 
 
 @router.get("/tests/{test_id}", response_model=Optional[ResilienceTest])
@@ -274,7 +275,7 @@ def run_resilience_test(test_id: str):
     success = random.random() > 0.3
     test.status = "passed" if success else "failed"
     test.actual_outcome = test.expected_outcome if success else "service_failed"
-    test.completed_at = datetime.utcnow()
+    test.completed_at = datetime.now(timezone.utc)
     test.metrics = {
         "recovery_time_seconds": random.randint(15, 120),
         "retry_success_rate": round(random.uniform(80, 99), 1),

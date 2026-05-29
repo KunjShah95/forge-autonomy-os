@@ -8,7 +8,7 @@ root cause, impact analysis, mitigation steps, prevention recommendations.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .context import _incidents
 from .api import events_db, decisions_db
@@ -45,7 +45,7 @@ class IncidentSummary(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     uncertainties: List[str] = Field(default_factory=list)
     exportable_markdown: str = ""
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

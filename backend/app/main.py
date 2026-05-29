@@ -18,12 +18,81 @@ from .rbac import router as rbac_router
 from .policy_engine import router as policy_engine_router
 from .workflows import router as workflows_router
 from .chaos import router as chaos_router
+from .quarantine import router as quarantine_router
+from .templates import router as templates_router
+from .pm_agent import router as pm_agent_router
+from .onboarding import router as onboarding_router
+from .persistence import router as persistence_router
+from .stream import router as stream_router
+from .timeline import router as timeline_router
+from .persistence_sync import load_events_from_db, load_decisions_from_db
+from .telemetry import setup_telemetry
+from .pg_persistence import init_postgres
+from .event_bus import init_event_bus
+from .operator import start_remediation_listener
 
 app = FastAPI(
     title="Forge Autonomy OS Backend",
     description="Milestone 0 Foundation - Event Ingestion, Decisions Feed & Audit Trail",
     version="1.0.0"
 )
+
+
+@app.on_event("startup")
+async def load_persistent_data():
+    """On startup, load any persisted data from SQLite into in-memory stores."""
+    try:
+        events = load_events_from_db()
+        decisions = load_decisions_from_db()
+        if events or decisions:
+            from .api import events_db, decisions_db
+            from .schemas import EventSchema, DecisionSchema
+            from datetime import datetime, timezone
+            # Reload events into in-memory store
+            for e in events:
+                try:
+                    ts = datetime.fromisoformat(e["timestamp"]) if isinstance(e.get("timestamp"), str) else datetime.now(timezone.utc)
+                    events_db.append(EventSchema(
+                        source=e.get("source", "system"),
+                        type=e.get("type", "RESTORED"),
+                        timestamp=ts,
+                        trace_id=e.get("trace_id", ""),
+                        payload=e.get("payload", {}),
+                    ))
+                except Exception:
+                    pass
+            for d in decisions:
+                try:
+                    ts = datetime.fromisoformat(d["timestamp"]) if isinstance(d.get("timestamp"), str) else datetime.now(timezone.utc)
+                    decisions_db.append(DecisionSchema(
+                        id=d.get("id", ""),
+                        trace_id=d.get("trace_id", ""),
+                        agent=d.get("agent", "system"),
+                        action=d.get("action", ""),
+                        reason=d.get("reason", ""),
+                        confidence=d.get("confidence", 0.0),
+                        risk=d.get("risk", 0),
+                        evidence=d.get("evidence", {}),
+                        timestamp=ts,
+                    ))
+                except Exception:
+                    pass
+            print(f"[Startup] Loaded {len(events)} events, {len(decisions)} decisions from SQLite")
+    except Exception as e:
+        print(f"[Startup] SQLite load skipped: {e}")
+
+# Configure CORS so the Vite React frontend can communicate with the backend
+# Initialize PostgreSQL persistence if configured (B-028)
+init_postgres()
+
+# Initialize OpenTelemetry (B-032) — tracing + metrics
+setup_telemetry(app)
+
+# Initialize NATS event bus (B-035) — real-time event distribution
+@app.on_event("startup")
+async def init_event_bus_on_start():
+    await init_event_bus()
+    await start_remediation_listener()
 
 # Configure CORS so the Vite React frontend can communicate with the backend
 app.add_middleware(
@@ -70,3 +139,10 @@ app.include_router(rbac_router)
 app.include_router(policy_engine_router)
 app.include_router(workflows_router)
 app.include_router(chaos_router)
+app.include_router(quarantine_router)
+app.include_router(templates_router)
+app.include_router(pm_agent_router)
+app.include_router(onboarding_router)
+app.include_router(persistence_router)
+app.include_router(stream_router)
+app.include_router(timeline_router)

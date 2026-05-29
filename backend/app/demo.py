@@ -8,7 +8,7 @@ Supports live mode and replay mode with clear simulation markers.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from .schemas import EventSchema, DecisionSchema, AuditSchema
@@ -36,7 +36,7 @@ class InjectedScenario(BaseModel):
     decisions: List[DecisionSchema] = Field(default_factory=list)
     audit: Optional[AuditSchema] = None
     is_simulation: bool = True
-    injected_at: datetime = Field(default_factory=datetime.utcnow)
+    injected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def _inject_scenario(scenario_name: str, mode: str) -> InjectedScenario:
     """Inject a deterministic failure scenario into the system."""
     scenario = SCENARIOS.get(scenario_name, SCENARIOS["dependency_mismatch"])
     trace_id = f"demo-{scenario_name}-{uuid.uuid4().hex[:8]}"
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Create event
     if scenario_name == "dependency_mismatch":

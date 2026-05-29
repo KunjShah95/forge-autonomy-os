@@ -224,7 +224,7 @@ export const apiClient = {
 
   // ---- Events ----
 
-  getEvents: async (): Promise<ApiEvent[]> => {
+  getEvents: async (limit?: number, offset?: number): Promise<ApiEvent[]> => {
     const fallbackEvents: ApiEvent[] = [
       {
         source: "github",
@@ -248,7 +248,11 @@ export const apiClient = {
         payload: { metric: "p99_latency", value: "950ms", threshold: "250ms" }
       }
     ];
-    return fetchWithFallback<ApiEvent[]>("/events", fallbackEvents);
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.set("limit", limit.toString());
+    if (offset !== undefined) params.set("offset", offset.toString());
+    const qs = params.toString();
+    return fetchWithFallback<ApiEvent[]>(`/events${qs ? "?" + qs : ""}`, fallbackEvents);
   },
 
   // ---- Health ----
@@ -271,7 +275,7 @@ export const apiClient = {
 
   // ---- Decisions ----
 
-  getDecisions: async (): Promise<ApiDecision[]> => {
+  getDecisions: async (limit?: number, offset?: number): Promise<ApiDecision[]> => {
     const fallbackDecisions: ApiDecision[] = [
       {
         id: "dec-101",
@@ -296,13 +300,24 @@ export const apiClient = {
         timestamp: new Date(Date.now() - 30 * 60000).toISOString()
       }
     ];
-    return fetchWithFallback<ApiDecision[]>("/decisions", fallbackDecisions);
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.set("limit", limit.toString());
+    if (offset !== undefined) params.set("offset", offset.toString());
+    const qs = params.toString();
+    return fetchWithFallback<ApiDecision[]>(`/decisions${qs ? "?" + qs : ""}`, fallbackDecisions);
   },
 
   // ---- Audit ----
 
-  getAudit: async (traceId?: string): Promise<ApiAudit[]> => {
-    const url = traceId ? `/audit?trace_id=${traceId}` : "/audit";
+  getAudit: async (traceId?: string, limit?: number, offset?: number): Promise<ApiAudit[]> => {
+    let url = traceId ? `/audit?trace_id=${traceId}` : "/audit";
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.set("limit", limit.toString());
+    if (offset !== undefined) params.set("offset", offset.toString());
+    const paramStr = params.toString();
+    if (paramStr) {
+      url += url.includes("?") ? `&${paramStr}` : `?${paramStr}`;
+    }
     const fallbackAudits: ApiAudit[] = [
       {
         trace_id: "trace-billing-101",
@@ -528,6 +543,55 @@ export const apiClient = {
       }
     } catch (e) {}
     return fetchWithFallback<RepairSuggestion>("/repair", fallback);
+  },
+
+  // ---- B-036: GitHub PR Creation ----
+
+  createPullRequest: async (req: {
+    repo_owner: string;
+    repo_name: string;
+    file_path: string;
+    file_content: string;
+    pr_title: string;
+    pr_body: string;
+    commit_message?: string;
+    fix_type?: string;
+    base_branch?: string;
+    service?: string;
+    draft?: boolean;
+  }): Promise<{ pr_url: string; pr_number: number; branch_name: string; status: string; success: boolean; message: string }> => {
+    const fallback = {
+      pr_url: `https://github.com/${req.repo_owner}/${req.repo_name}/pull/new/forge-auto-fix`,
+      pr_number: Math.floor(Math.random() * 999) + 1,
+      branch_name: `forge-auto/fix-${req.service || "unknown"}-${Date.now()}`,
+      status: "open",
+      success: true,
+      message: "PR created (mock — GITHUB_TOKEN not configured)",
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/pr/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repo_owner: req.repo_owner,
+          repo_name: req.repo_name,
+          file_path: req.file_path,
+          file_content: req.file_content,
+          pr_title: req.pr_title,
+          pr_body: req.pr_body,
+          commit_message: req.commit_message || "fix: auto-generated repair patch",
+          fix_type: req.fix_type || "fix",
+          base_branch: req.base_branch || "main",
+          service: req.service || "",
+          draft: req.draft || false,
+        }),
+      });
+      if (res.ok) {
+        isLiveMode = true;
+        return await res.json();
+      }
+    } catch (e) {}
+    return fallback;
   },
 
   // ---- B-008: Rerun ----
@@ -999,6 +1063,305 @@ export const apiClient = {
       active_faults: 0, completed_tests: 3, services_affected: [],
       overall_resilience_score: 75, last_test_at: null,
     });
+  },
+
+  // ---- B-021: Quarantine ----
+
+  handleRetryBackoff: async (req: any): Promise<any> => {
+    const fallback = {
+      trace_id: req.trace_id,
+      test_name: req.test_name || "unknown-test",
+      status: "quarantined",
+      current_retry: 0, max_retries: 3, backoff_seconds: 10.0,
+      quarantine_until: new Date(Date.now() + 30*60000).toISOString(),
+      message: `Test quarantined for 30min with exponential backoff`,
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/quarantine/retry`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (res.ok) { isLiveMode = true; return await res.json(); }
+    } catch (e) {}
+    return fallback;
+  },
+
+  markTestPassed: async (testName: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/quarantine/pass/${testName}`, { status: "passed" }, "POST");
+  },
+
+  listQuarantineRules: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/quarantine/rules", []);
+  },
+
+  getQuarantineRule: async (name: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/quarantine/rules/${name}`, null);
+  },
+
+  createQuarantineRule: async (rule: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/quarantine/rules`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rule),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return rule;
+  },
+
+  updateQuarantineRule: async (name: string, rule: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/quarantine/rules/${name}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rule),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return rule;
+  },
+
+  deleteQuarantineRule: async (name: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/quarantine/rules/${name}`, { status: "deleted" }, "DELETE");
+  },
+
+  listQuarantinedTests: async (status?: string): Promise<any[]> => {
+    const url = status ? `/quarantine/tests?status=${status}` : "/quarantine/tests";
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getQuarantinedTest: async (testName: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/quarantine/tests/${testName}`, null);
+  },
+
+  // ---- B-022: Templates ----
+
+  listTemplates: async (category?: string, enabledOnly?: boolean): Promise<any[]> => {
+    let url = "/templates";
+    const params = [];
+    if (category) params.push(`category=${category}`);
+    if (enabledOnly) params.push(`enabled_only=true`);
+    if (params.length) url += `?${params.join("&")}`;
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getTemplate: async (name: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/templates/${name}`, null);
+  },
+
+  createTemplate: async (template: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/templates`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(template),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return template;
+  },
+
+  updateTemplate: async (name: string, template: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/templates/${name}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(template),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return template;
+  },
+
+  deleteTemplate: async (name: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/templates/${name}`, { status: "deleted" }, "DELETE");
+  },
+
+  applyTemplate: async (req: any): Promise<any> => {
+    const fallback = {
+      template_name: req.template_name, version: "1.0.0", applied: true,
+      patch: "# Auto-generated fix patch from template",
+      validation_errors: [], warnings: [],
+      message: `Template '${req.template_name}' applied successfully`,
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/templates/apply`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (res.ok) { isLiveMode = true; return await res.json(); }
+    } catch (e) {}
+    return fallback;
+  },
+
+  // ---- B-023: PM Agent — Backlog, Sprints, Blockers ----
+
+  listBacklogItems: async (status: string = "", priority: string = "", service: string = ""): Promise<any[]> => {
+    let url = "/pm/backlog";
+    const params = [];
+    if (status) params.push(`status=${status}`);
+    if (priority) params.push(`priority=${priority}`);
+    if (service) params.push(`service=${service}`);
+    if (params.length) url += `?${params.join("&")}`;
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getBacklogItem: async (itemId: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/pm/backlog/${itemId}`, null);
+  },
+
+  createBacklogItem: async (item: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/backlog`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      if (res.ok) { return await res.json(); }
+    } catch (e) {}
+    return item;
+  },
+
+  updateBacklogItem: async (itemId: string, item: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/backlog/${itemId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return item;
+  },
+
+  deleteBacklogItem: async (itemId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/pm/backlog/${itemId}`, { status: "deleted" }, "DELETE");
+  },
+
+  decomposeBacklog: async (description: string, service: string = "", tags: string[] = []): Promise<any[]> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/backlog/decompose`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, service, tags }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return [];
+  },
+
+  listBlockers: async (activeOnly: boolean = false): Promise<any[]> => {
+    const url = activeOnly ? "/pm/blockers?active_only=true" : "/pm/blockers";
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  detectBlockers: async (): Promise<any[]> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/blockers/detect`, { method: "POST" });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return [];
+  },
+
+  resolveBlocker: async (blockerId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/pm/blockers/${blockerId}/resolve`, { status: "resolved" }, "POST");
+  },
+
+  listSprints: async (status: string = ""): Promise<any[]> => {
+    const url = status ? `/pm/sprints?status=${status}` : "/pm/sprints";
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getSprint: async (sprintId: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/pm/sprints/${sprintId}`, null);
+  },
+
+  generateSprintPlan: async (req: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/sprints/plan`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return null;
+  },
+
+  startSprint: async (sprintId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/pm/sprints/${sprintId}/start`, null, "POST");
+  },
+
+  completeSprint: async (sprintId: string): Promise<any> => {
+    return apiFetchWithFallback<any>(`/pm/sprints/${sprintId}/complete`, null, "POST");
+  },
+
+  // ---- B-025: Pilot Onboarding Dashboard ----
+
+  getPilotDashboard: async (): Promise<any> => {
+    return apiFetchWithFallback<any>("/onboarding/dashboard", {
+      kpis: [], services: [], autonomy_metrics: [], tenants: [],
+      overall_health_score: 0, active_incidents: 0,
+      total_decisions_24h: 0, autonomy_rate_24h: 0,
+      generated_at: new Date().toISOString(),
+    });
+  },
+
+  getOnboardingKpis: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/onboarding/kpis", []);
+  },
+
+  getServiceHealth: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/onboarding/services", []);
+  },
+
+  getAutonomyMetrics: async (): Promise<any[]> => {
+    return apiFetchWithFallback<any[]>("/onboarding/metrics/autonomy", []);
+  },
+
+  listTenants: async (status: string = ""): Promise<any[]> => {
+    const url = status ? `/onboarding/tenants?status=${status}` : "/onboarding/tenants";
+    return apiFetchWithFallback<any[]>(url, []);
+  },
+
+  getTenant: async (tenantId: string): Promise<any | null> => {
+    return apiFetchWithFallback<any | null>(`/onboarding/tenants/${tenantId}`, null);
+  },
+
+  createTenant: async (tenant: any): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/onboarding/tenants`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tenant),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return tenant;
+  },
+
+  updateTenantReadiness: async (tenantId: string, checks: Record<string, boolean>): Promise<any> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/onboarding/tenants/${tenantId}/readiness`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checks),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return null;
+  },
+
+  // ---- Persistence ----
+
+  getPersistenceStats: async (): Promise<any> => {
+    return apiFetchWithFallback<any>("/persistence/stats", { available: false, mode: "in-memory" });
+  },
+
+  resetPersistence: async (): Promise<any> => {
+    return apiFetchWithFallback<any>("/persistence/reset", { status: "reset" }, "POST");
+  },
+
+  validateTemplateYaml: async (name: string, content: string): Promise<string[]> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/templates/${name}/validate`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return [];
   },
 };
 

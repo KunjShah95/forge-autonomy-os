@@ -8,7 +8,7 @@ incident history, and deployment patterns.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1", tags=["Risk"])
 
@@ -46,7 +46,7 @@ class RiskScoreResult(BaseModel):
     risk_level: str  # low | moderate | high | critical
     factors: List[RiskFactor] = Field(default_factory=list)
     recommendation: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

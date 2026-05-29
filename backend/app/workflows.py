@@ -8,7 +8,7 @@ Supports save/load, node property editing, and workflow execution.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["Workflows"])
@@ -58,8 +58,8 @@ class WorkflowDefinition(BaseModel):
     nodes: List[WorkflowNode] = Field(default_factory=list)
     links: List[WorkflowLink] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------
@@ -129,12 +129,13 @@ _workflows["wf-cicd-default"] = WorkflowDefinition(
 # ---------------------------------------------------------------------------
 
 @router.get("", response_model=List[WorkflowDefinition])
-def list_workflows(enabled_only: bool = False):
+def list_workflows(enabled_only: bool = False, limit: int = 50, offset: int = 0):
     """List all workflow definitions."""
     workflows = list(_workflows.values())
     if enabled_only:
         workflows = [w for w in workflows if w.enabled]
-    return sorted(workflows, key=lambda w: w.updated_at, reverse=True)
+    result = sorted(workflows, key=lambda w: w.updated_at, reverse=True)
+    return result[offset:offset + limit]
 
 
 @router.get("/{workflow_id}", response_model=Optional[WorkflowDefinition])
@@ -148,8 +149,8 @@ def create_workflow(workflow: WorkflowDefinition):
     """Create a new workflow definition."""
     if workflow.id in _workflows:
         raise HTTPException(status_code=409, detail=f"Workflow '{workflow.id}' already exists")
-    workflow.created_at = datetime.utcnow()
-    workflow.updated_at = datetime.utcnow()
+    workflow.created_at = datetime.now(timezone.utc)
+    workflow.updated_at = datetime.now(timezone.utc)
     _workflows[workflow.id] = workflow
     return workflow
 
@@ -159,7 +160,7 @@ def update_workflow(workflow_id: str, workflow: WorkflowDefinition):
     """Update an existing workflow definition."""
     if workflow_id not in _workflows:
         raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found")
-    workflow.updated_at = datetime.utcnow()
+    workflow.updated_at = datetime.now(timezone.utc)
     _workflows[workflow_id] = workflow
     return workflow
 
@@ -200,6 +201,6 @@ def execute_workflow(workflow_id: str):
         "total_steps": len(steps),
         "completed_steps": len(steps),
         "steps": steps,
-        "started_at": datetime.utcnow().isoformat(),
-        "completed_at": datetime.utcnow().isoformat(),
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": datetime.now(timezone.utc).isoformat(),
     }

@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: forge-postgres
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: forge-dev-secret
+      POSTGRES_DB: forge_autonomy_os
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forge -d forge_autonomy_os"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: forge-backend
+    ports:
+      - "8000:8000"
+    environment:
+      FORGE_DB_PATH: /app/app/forge.db
+      FORGE_PG_DSN: "postgresql+asyncpg://forge:forge-dev-secret@postgres:5432/forge_autonomy_os"
+      FORGE_PERSISTENCE: postgres
+      GITHUB_WEBHOOK_SECRET: forge-dev-secret
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+      OTEL_CONSOLE_EXPORTER: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forge-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
