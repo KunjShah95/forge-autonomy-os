@@ -63,10 +63,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
-    "@ai-platform/core": "^0.8.0",
-    "@ai-platform/llm": "^0.40.0",
-    "jsdom": "^25.0.0",
-    "ai-provider": "^0.13.4"
+    "jsdom": "^25.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -91,8 +88,6 @@
     "vite": "^5.4.19",
     "vitest": "^3.2.4",
     "prettier": "^3.4.1",
-    "prettier-plugin-tailwindcss": "^0.6.5",
-    "html": "^1.0.0",
-    "html-docx": "^3.8.0"
+    "prettier-plugin-tailwindcss": "^0.6.5"
   }
 }

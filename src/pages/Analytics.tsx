@@ -1,13 +1,50 @@
+import { useState, useEffect } from "react";
 import { PageHeader, MetricCard, Panel } from "@/components/ui-kit/Panels";
 import { velocityData, latencyData } from "@/lib/mock";
 import { Area, AreaChart, Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Rocket, Clock, Bot, TrendingUp } from "lucide-react";
+import { Rocket, Clock, Bot, TrendingUp, Gauge, Shield, FlaskConical } from "lucide-react";
+import { apiClient, ClassificationResult, PolicyResult } from "@/lib/apiClient";
 
 const Analytics = () => {
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
+  const [policyResult, setPolicyResult] = useState<PolicyResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const runSampleAnalysis = async () => {
+    setLoading(true);
+    // Run a sample classification + policy evaluation to demonstrate API connectivity
+    const cls = await apiClient.classifyFailure(
+      "analytics-demo",
+      "Error: Cannot find module 'react-dom' - dependency resolution failed"
+    );
+    setClassification(cls);
+    const pol = await apiClient.evaluatePolicy({
+      action: "auto-deploy",
+      service: "billing-svc",
+      risk_score: 72,
+      confidence: 0.88,
+      blast_radius: "medium",
+      trace_id: "analytics-demo",
+    });
+    setPolicyResult(pol);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    runSampleAnalysis();
+  }, []);
+
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="insights" title="Analytics & Insights"
-        desc="Engineering velocity, AI intervention effectiveness, and predictive outage analytics across all environments." />
+        desc="Engineering velocity, AI intervention effectiveness, and predictive outage analytics across all environments."
+        actions={
+          <button onClick={runSampleAnalysis} disabled={loading}
+            className="mono text-xs px-3 py-2 rounded-md border border-border hover:border-primary/40 transition flex items-center gap-1.5">
+            <FlaskConical className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? "Analyzing..." : "Run sample analysis"}
+          </button>
+        } />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard label="Deploy frequency" value="14.2/d" delta="▲ DORA elite" icon={Rocket} accent="primary" />
@@ -47,23 +84,29 @@ const Analytics = () => {
           </div>
         </Panel>
 
-        <Panel eyebrow="AI effectiveness" title="Autonomous actions by agent" className="h-[300px]">
-          <div className="p-3 h-full">
-            <ResponsiveContainer>
-              <AreaChart data={velocityData} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="ai-g" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.7" />
-                    <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Area type="monotone" dataKey="ai" stroke="hsl(var(--accent))" fill="url(#ai-g)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+        <Panel eyebrow="AI analysis" title="Sample Classification & Policy">
+          <div className="p-5 space-y-3">
+            {classification && (
+              <div className="p-3 rounded-lg bg-accent/5 border border-accent/30">
+                <div className="flex items-center gap-2 mb-1">
+                  <Gauge className="h-3.5 w-3.5 text-accent" />
+                  <span className="mono text-[10px] uppercase tracking-widest text-accent">Classifier result</span>
+                </div>
+                <div className="text-sm"><b>Type:</b> {classification.classification}</div>
+                <div className="text-xs text-muted-foreground">confidence {Math.round(classification.confidence * 100)}%</div>
+                <div className="text-xs text-muted-foreground mt-1">{classification.summary}</div>
+              </div>
+            )}
+            {policyResult && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/30">
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield className="h-3.5 w-3.5 text-primary" />
+                  <span className="mono text-[10px] uppercase tracking-widest text-primary">Policy evaluation</span>
+                </div>
+                <div className="text-sm"><b>Class:</b> {policyResult.action_class} · <b>Allowed:</b> {policyResult.allowed ? "✓" : "✗"}</div>
+                <div className="text-xs text-muted-foreground">{policyResult.reason}</div>
+              </div>
+            )}
           </div>
         </Panel>
 

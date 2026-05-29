@@ -1,15 +1,86 @@
+import { useState, useEffect } from "react";
 import { PageHeader, Panel, StatusPill } from "@/components/ui-kit/Panels";
 import { deployments } from "@/lib/mock";
-import { CheckCircle2, Circle, AlertTriangle, Play, RotateCcw, Sparkles, GitCommit } from "lucide-react";
+import { apiClient, ClassificationResult, CanaryStatus, RiskScoreResult } from "@/lib/apiClient";
+import { CheckCircle2, Circle, AlertTriangle, Play, RotateCcw, Sparkles, GitCommit, FlaskConical, Shield, Gauge } from "lucide-react";
 
 const stages = ["source", "build", "test", "scan", "canary", "deploy"];
 
 const CICD = () => {
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
+  const [classifying, setClassifying] = useState(false);
+  const [canaries, setCanaries] = useState<CanaryStatus[]>([]);
+  const [riskScores, setRiskScores] = useState<Record<string, RiskScoreResult>>({});
+  const [promoting, setPromoting] = useState<string | null>(null);
+
+  // Load canaries on mount
+  useEffect(() => {
+    apiClient.listCanaries().then(setCanaries);
+  }, []);
+
+  const handleClassify = async () => {
+    setClassifying(true);
+    const result = await apiClient.classifyFailure(
+      "cicd-demo",
+      "TypeError: Cannot read properties of undefined (reading 'pool') at src/db/connection.ts:42"
+    );
+    setClassification(result);
+    setClassifying(false);
+  };
+
+  const handleStartCanary = async () => {
+    const canary = await apiClient.startCanary({
+      service: "users-svc",
+      version: "v3.8.1",
+      target_percentage: 25,
+      bake_minutes: 10,
+      trace_id: `canary-${Date.now()}`,
+    });
+    setCanaries(prev => [...prev, canary]);
+  };
+
+  const handlePromote = async (id: string) => {
+    setPromoting(id);
+    const result = await apiClient.promoteCanary(id);
+    setCanaries(prev => prev.map(c => c.id === id ? result : c));
+    setPromoting(null);
+  };
+
+  const handleRollback = async (id: string) => {
+    const result = await apiClient.rollbackCanary(id);
+    setCanaries(prev => prev.map(c => c.id === id ? result : c));
+  };
+
+  const handleScoreRisk = async (deploy: typeof deployments[0]) => {
+    const result = await apiClient.scoreRisk({
+      service: deploy.service,
+      version: deploy.version,
+      files_changed: Math.floor(Math.random() * 20) + 1,
+      lines_added: Math.floor(Math.random() * 200) + 10,
+      lines_removed: Math.floor(Math.random() * 50),
+      is_config_change: deploy.risk > 40,
+      previous_incidents_30d: deploy.risk > 60 ? 3 : 1,
+      deployment_count_30d: 8,
+      trace_id: `risk-${deploy.id}`,
+    });
+    setRiskScores(prev => ({ ...prev, [deploy.id]: result }));
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="continuous intelligence" title="CI/CD Intelligence"
         desc="Pipelines that diagnose themselves. AI proposes fixes, scores risk, and orchestrates canary rollouts with automatic rollback."
-        actions={<button className="mono text-xs px-3 py-2 rounded-md bg-gradient-to-r from-primary to-accent text-primary-foreground"><Play className="h-3 w-3 inline mr-1.5" />Trigger pipeline</button>} />
+        actions={
+          <div className="flex gap-2">
+            <button onClick={handleClassify} disabled={classifying}
+              className="mono text-xs px-3 py-2 rounded-md border border-border hover:border-primary/40 transition flex items-center gap-1.5">
+              <FlaskConical className="h-3.5 w-3.5" /> {classifying ? "Classifying..." : "Classify failure"}
+            </button>
+            <button className="mono text-xs px-3 py-2 rounded-md bg-gradient-to-r from-primary to-accent text-primary-foreground">
+              <Play className="h-3 w-3 inline mr-1.5" />Trigger pipeline
+            </button>
+          </div>
+        } />
 
       {/* Pipeline visualization */}
       <Panel eyebrow="orders-svc · v2.14.3" title="Active Pipeline" actions={<span className="mono text-[10px] text-neon-green">● running · 02:14 elapsed</span>}>
@@ -50,6 +121,24 @@ const CICD = () => {
                 <div className="text-muted-foreground mt-1">TypeError: Cannot read properties of undefined (reading 'pool') at src/db/connection.ts:42</div>
               </div>
             </div>
+
+            {classification && (
+              <div className="p-3 rounded-lg bg-accent/5 border border-accent/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-3.5 w-3.5 text-accent" />
+                  <span className="mono text-[10px] uppercase tracking-widest text-accent">
+                    Classified: {classification.classification} · conf {Math.round(classification.confidence * 100)}%
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{classification.summary}</p>
+                {classification.evidence.length > 0 && (
+                  <div className="mono text-[10px] bg-background/40 p-2 rounded border border-border">
+                    {classification.evidence.map((e, i) => <div key={i} className="text-muted-foreground">{e}</div>)}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/30">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -68,26 +157,42 @@ const CICD = () => {
           </div>
         </Panel>
 
-        <Panel eyebrow="risk model" title="Deployment Risk Scoring">
+        <Panel eyebrow="risk model" title="Deployment Risk Scoring"
+          actions={<button onClick={() => handleScoreRisk(deployments[0])} className="mono text-[10px] px-2 py-1 rounded border border-border hover:border-primary/40"><Gauge className="h-3 w-3 inline mr-1" />Score all</button>}>
           <div className="p-5 space-y-3">
-            {deployments.slice(0, 4).map(d => (
-              <div key={d.id} className="p-3 rounded-lg border border-border bg-secondary/40">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="mono text-xs">{d.service} <span className="text-muted-foreground">{d.version}</span></div>
-                  <StatusPill status={d.status} />
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-background rounded-full overflow-hidden">
-                    <div className={`h-full ${d.risk > 60 ? "bg-neon-red" : d.risk > 30 ? "bg-neon-amber" : "bg-neon-green"}`} style={{ width: `${d.risk}%` }} />
+            {deployments.slice(0, 4).map(d => {
+              const score = riskScores[d.id];
+              const displayRisk = score ? score.overall_risk : d.risk;
+              const displayLevel = score ? score.risk_level : (d.risk > 60 ? "high" : d.risk > 30 ? "moderate" : "low");
+              const displayRec = score ? score.recommendation : (
+                d.risk > 60 ? "high · 3 critical signals · rollback armed" :
+                d.risk > 30 ? "moderate · canary recommended @ 10%" : "low · safe to fast-forward"
+              );
+              return (
+                <div key={d.id} className="p-3 rounded-lg border border-border bg-secondary/40 hover:border-primary/30 transition cursor-pointer" onClick={() => handleScoreRisk(d)}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="mono text-xs">{d.service} <span className="text-muted-foreground">{d.version}</span></div>
+                    <StatusPill status={d.status} />
                   </div>
-                  <span className="mono text-xs w-10 text-right">{d.risk}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-background rounded-full overflow-hidden">
+                      <div className={`h-full ${displayRisk > 60 ? "bg-neon-red" : displayRisk > 30 ? "bg-neon-amber" : "bg-neon-green"}`} style={{ width: `${displayRisk}%` }} />
+                    </div>
+                    <span className="mono text-xs w-10 text-right">{displayRisk}</span>
+                  </div>
+                  <div className="mono text-[10px] text-muted-foreground mt-1">{displayRec}</div>
+                  {score && score.factors.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {score.factors.map((f, i) => (
+                        <span key={i} className="mono text-[9px] px-1.5 py-0.5 rounded bg-background/60 border border-border/50" title={f.description}>
+                          {f.name}: {f.score}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="mono text-[10px] text-muted-foreground mt-1">
-                  {d.risk > 60 ? "high · 3 critical signals · rollback armed" :
-                   d.risk > 30 ? "moderate · canary recommended @ 10%" : "low · safe to fast-forward"}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Panel>
       </div>

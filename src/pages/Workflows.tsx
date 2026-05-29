@@ -1,6 +1,7 @@
-import { PageHeader, Panel } from "@/components/ui-kit/Panels";
-import { useState, useRef } from "react";
-import { GitBranch, Bot, Rocket, ShieldAlert, AlertCircle, Webhook, Plus } from "lucide-react";
+import { PageHeader, Panel, StatusPill } from "@/components/ui-kit/Panels";
+import { useState, useRef, useEffect } from "react";
+import { GitBranch, Bot, Rocket, ShieldAlert, AlertCircle, Webhook, Plus, Bug, RotateCcw, Sparkles, FlaskConical } from "lucide-react";
+import { apiClient, InjectedScenario, ReplaySession } from "@/lib/apiClient";
 
 interface Node { id: string; type: string; x: number; y: number; label: string; icon: any; }
 
@@ -22,10 +23,46 @@ const typeStyle: Record<string, string> = {
   condition: "border-neon-amber/50 bg-neon-amber/10 text-neon-amber",
 };
 
+const scenarioDescriptions: Record<string, string> = {
+  dependency_mismatch: "A PR introduces a dependency that doesn't resolve in CI.",
+  config_error: "A config change causes a type error during build.",
+  flaky_test: "A CI pipeline fails due to a timeout in integration tests.",
+  latency_spike: "A production latency spike triggers auto-rollback.",
+};
+
 const Workflows = () => {
   const [nodes, setNodes] = useState(initial);
   const [drag, setDrag] = useState<{ id: string; ox: number; oy: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const [scenarios, setScenarios] = useState<Record<string, {description: string}>>({});
+  const [injectingScenario, setInjectingScenario] = useState<string | null>(null);
+  const [injectedScenario, setInjectedScenario] = useState<InjectedScenario | null>(null);
+  const [replaySession, setReplaySession] = useState<ReplaySession | null>(null);
+  const [replaying, setReplaying] = useState(false);
+
+  useEffect(() => {
+    apiClient.getDemoScenarios().then(data => setScenarios(data.scenarios));
+  }, []);
+
+  const handleInjectFailure = async (scenario: string) => {
+    setInjectingScenario(scenario);
+    const result = await apiClient.injectDemoFailure(scenario, "live");
+    setInjectedScenario(result);
+    setInjectingScenario(null);
+  };
+
+  const handleStartReplay = async (traceId: string) => {
+    const session = await apiClient.startReplay(traceId);
+    setReplaySession(session);
+  };
+
+  const handleStepReplay = async () => {
+    if (!replaySession) return;
+    setReplaying(true);
+    const session = await apiClient.stepReplay(replaySession.id);
+    setReplaySession(session);
+    setReplaying(false);
+  };
 
   const onDown = (e: React.MouseEvent, n: Node) => {
     const rect = ref.current!.getBoundingClientRect();
@@ -66,35 +103,90 @@ const Workflows = () => {
           </div>
         </Panel>
 
-        <Panel className="col-span-10 h-[600px] overflow-hidden relative">
-          <div ref={ref} onMouseMove={onMove} onMouseUp={() => setDrag(null)} onMouseLeave={() => setDrag(null)}
-            className="absolute inset-0 bg-grid">
-            {/* edges */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-              {links.map(([a, b], i) => {
-                const A = nodes.find(n => n.id === a)!, B = nodes.find(n => n.id === b)!;
-                const x1 = A.x + 90, y1 = A.y + 24, x2 = B.x + 10, y2 = B.y + 24;
-                const mx = (x1 + x2) / 2;
-                return (
-                  <path key={i} d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
-                    stroke="hsl(var(--primary))" strokeOpacity="0.5" strokeWidth="1.5" fill="none"
-                    strokeDasharray="4 3" className="animate-dash" />
-                );
-              })}
-            </svg>
-            {nodes.map(n => (
-              <div key={n.id} onMouseDown={(e) => onDown(e, n)}
-                className={`absolute select-none cursor-grab active:cursor-grabbing w-44 rounded-lg border-2 glass p-3 ${typeStyle[n.type]}`}
-                style={{ left: n.x, top: n.y }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <n.icon className="h-3.5 w-3.5" />
-                  <span className="mono text-[9px] uppercase tracking-widest opacity-80">{n.type}</span>
-                </div>
-                <div className="text-xs font-medium text-foreground">{n.label}</div>
+        <div className="col-span-10 space-y-4">
+          <Panel eyebrow="demo controls" title="Failure Injection & Replay"
+            actions={<span className="mono text-[10px] text-muted-foreground">{Object.keys(scenarios).length} scenarios available</span>}>
+            <div className="p-5 space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(scenarioDescriptions).map(scenario => (
+                  <button key={scenario} onClick={() => handleInjectFailure(scenario)} disabled={injectingScenario === scenario}
+                    className="mono text-[10px] px-2.5 py-1.5 rounded border border-border hover:border-primary/40 transition flex items-center gap-1.5">
+                    <Bug className="h-3 w-3" />
+                    {injectingScenario === scenario ? "Injecting..." : `Inject ${scenario.replace(/_/g, ' ')}`}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        </Panel>
+              {injectedScenario && (
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 text-accent" />
+                      <span className="mono text-[10px] uppercase tracking-widest text-accent">
+                        Injected: {injectedScenario.scenario} · {injectedScenario.mode} mode
+                      </span>
+                    </div>
+                    <button onClick={() => handleStartReplay(injectedScenario.trace_id)}
+                      className="mono text-[10px] px-2 py-1 rounded border border-border flex items-center gap-1">
+                      <RotateCcw className="h-3 w-3" /> Replay
+                    </button>
+                  </div>
+                  <div className="mono text-[10px] text-muted-foreground">{injectedScenario.description}</div>
+                  <div className="mono text-[10px] text-muted-foreground mt-1">trace: {injectedScenario.trace_id}</div>
+                </div>
+              )}
+              {replaySession && (
+                <div className="p-3 rounded-lg border border-primary/30 bg-primary/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="mono text-[10px] uppercase tracking-widest text-primary">
+                      Replay: step {replaySession.current_step}/{replaySession.total_steps} · {replaySession.status}
+                    </span>
+                    <button onClick={handleStepReplay} disabled={replaying || replaySession.current_step >= replaySession.total_steps}
+                      className="mono text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground disabled:opacity-50">
+                      {replaying ? 'Stepping...' : 'Step →'}
+                    </button>
+                  </div>
+                  {replaySession.steps.slice(0, replaySession.current_step + 1).map((step, i) => (
+                    <div key={i} className="flex gap-2 items-center text-xs mono text-muted-foreground py-1">
+                      <span className="text-primary">●</span>
+                      <span className="w-24">{step.type}</span>
+                      <span>{step.summary}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Panel>
+
+          <Panel className="h-[400px] overflow-hidden relative">
+            <div ref={ref} onMouseMove={onMove} onMouseUp={() => setDrag(null)} onMouseLeave={() => setDrag(null)}
+              className="absolute inset-0 bg-grid">
+              {/* edges */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                {links.map(([a, b], i) => {
+                  const A = nodes.find(n => n.id === a)!, B = nodes.find(n => n.id === b)!;
+                  const x1 = A.x + 90, y1 = A.y + 24, x2 = B.x + 10, y2 = B.y + 24;
+                  const mx = (x1 + x2) / 2;
+                  return (
+                    <path key={i} d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
+                      stroke="hsl(var(--primary))" strokeOpacity="0.5" strokeWidth="1.5" fill="none"
+                      strokeDasharray="4 3" className="animate-dash" />
+                  );
+                })}
+              </svg>
+              {nodes.map(n => (
+                <div key={n.id} onMouseDown={(e) => onDown(e, n)}
+                  className={`absolute select-none cursor-grab active:cursor-grabbing w-44 rounded-lg border-2 glass p-3 ${typeStyle[n.type]}`}
+                  style={{ left: n.x, top: n.y }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <n.icon className="h-3.5 w-3.5" />
+                    <span className="mono text-[9px] uppercase tracking-widest opacity-80">{n.type}</span>
+                  </div>
+                  <div className="text-xs font-medium text-foreground">{n.label}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { LayoutDashboard, Bot, GitBranch, Siren, Network, Workflow, BarChart3, S
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/", label: "Command", icon: LayoutDashboard },
+  { to: "/app", label: "Command", icon: LayoutDashboard },
   { to: "/agents", label: "AI Agents", icon: Bot },
   { to: "/cicd", label: "CI/CD Intel", icon: GitBranch },
   { to: "/incidents", label: "Incidents", icon: Siren },

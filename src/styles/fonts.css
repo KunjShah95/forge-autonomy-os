@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Apply font-family variables if desired or standard class overrides */
+.font-instrument {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+.font-inter {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
