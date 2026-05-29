@@ -19,12 +19,12 @@ from .api import events_db, audit_db, AuditSchema
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
-# Read webhook secret from env or use dev default
-WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "forge-dev-secret")
+WEBHOOK_SECRET = os.environ["GITHUB_WEBHOOK_SECRET"]
 
 # ---------------------------------------------------------------------------
 # Signature verification
 # ---------------------------------------------------------------------------
+
 
 def verify_signature(payload_body: bytes, signature_header: Optional[str]) -> bool:
     """Verify X-Hub-Signature-256 against the webhook secret."""
@@ -69,7 +69,9 @@ WORKFLOW_RUN_ACTIONS = {
 }
 
 
-def normalize_pull_request(payload: Dict[str, Any], delivery_id: str) -> Optional[EventSchema]:
+def normalize_pull_request(
+    payload: Dict[str, Any], delivery_id: str
+) -> Optional[EventSchema]:
     """Normalize a GitHub pull_request event into an EventSchema."""
     action = payload.get("action", "")
     event_type = PULL_REQUEST_ACTIONS.get(action)
@@ -100,7 +102,9 @@ def normalize_pull_request(payload: Dict[str, Any], delivery_id: str) -> Optiona
     )
 
 
-def normalize_check_suite(payload: Dict[str, Any], delivery_id: str) -> Optional[EventSchema]:
+def normalize_check_suite(
+    payload: Dict[str, Any], delivery_id: str
+) -> Optional[EventSchema]:
     """Normalize a GitHub check_suite event into an EventSchema."""
     action = payload.get("action", "")
     event_type = CHECK_SUITE_ACTIONS.get(action)
@@ -129,7 +133,9 @@ def normalize_check_suite(payload: Dict[str, Any], delivery_id: str) -> Optional
     )
 
 
-def normalize_workflow_run(payload: Dict[str, Any], delivery_id: str) -> Optional[EventSchema]:
+def normalize_workflow_run(
+    payload: Dict[str, Any], delivery_id: str
+) -> Optional[EventSchema]:
     """Normalize a GitHub workflow_run event into an EventSchema."""
     action = payload.get("action", "")
     event_type = WORKFLOW_RUN_ACTIONS.get(action)
@@ -208,7 +214,9 @@ async def github_webhook(
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     if not x_github_event or not x_github_delivery:
-        raise HTTPException(status_code=400, detail="Missing X-GitHub-Event or X-GitHub-Delivery header")
+        raise HTTPException(
+            status_code=400, detail="Missing X-GitHub-Event or X-GitHub-Delivery header"
+        )
 
     # Parse JSON payload from the same raw bytes
     try:
