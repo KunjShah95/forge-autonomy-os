@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -26,21 +27,26 @@ from .persistence import router as persistence_router
 from .stream import router as stream_router
 from .timeline import router as timeline_router
 from .persistence_sync import load_events_from_db, load_decisions_from_db
-from .telemetry import setup_telemetry
+from .telemetry import setup_telemetry, register_metrics_middleware
 from .pg_persistence import init_postgres
 from .event_bus import init_event_bus
 from .operator import start_remediation_listener
+from .canary_agent import router as canary_agent_router
+from .rerun_agent import router as rerun_agent_router
 
-app = FastAPI(
-    title="Forge Autonomy OS Backend",
-    description="Milestone 0 Foundation - Event Ingestion, Decisions Feed & Audit Trail",
-    version="1.0.0"
-)
+# v1.0.0 modules
+from .test_selection import router as test_selection_router
+from .security_scanner import router as security_scanner_router
+from .sso import router as sso_router
+from .compliance import router as compliance_router
+from .orchestrator_agent import router as orchestrator_agent_router
 
 
-@app.on_event("startup")
-async def load_persistent_data():
-    """On startup, load any persisted data from SQLite into in-memory stores."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: startup initialization, shutdown cleanup."""
+    # ── Startup ──
+    # Load persisted data from SQLite
     try:
         events = load_events_from_db()
         decisions = load_decisions_from_db()
@@ -48,7 +54,6 @@ async def load_persistent_data():
             from .api import events_db, decisions_db
             from .schemas import EventSchema, DecisionSchema
             from datetime import datetime, timezone
-            # Reload events into in-memory store
             for e in events:
                 try:
                     ts = datetime.fromisoformat(e["timestamp"]) if isinstance(e.get("timestamp"), str) else datetime.now(timezone.utc)
@@ -81,48 +86,68 @@ async def load_persistent_data():
     except Exception as e:
         print(f"[Startup] SQLite load skipped: {e}")
 
-# Configure CORS so the Vite React frontend can communicate with the backend
-# Initialize PostgreSQL persistence if configured (B-028)
-init_postgres()
+    # Initialize PostgreSQL if configured
+    init_postgres()
 
-# Initialize OpenTelemetry (B-032) — tracing + metrics
-setup_telemetry(app)
+    # Initialize Telemetry
+    setup_telemetry(app)
 
-# Initialize NATS event bus (B-035) — real-time event distribution
-@app.on_event("startup")
-async def init_event_bus_on_start():
-    await init_event_bus()
-    await start_remediation_listener()
+    # Initialize NATS event bus + remediation listener
+    try:
+        await init_event_bus()
+        await start_remediation_listener()
+    except Exception as e:
+        print(f"[Startup] NATS/operator init skipped: {e}")
 
-# Configure CORS so the Vite React frontend can communicate with the backend
+    yield
+
+    # ── Shutdown ──
+    try:
+        from .event_bus import close as close_event_bus
+        await close_event_bus()
+    except Exception:
+        pass
+
+
+app = FastAPI(
+    title="Forge Autonomy OS Backend",
+    description="AI-Native Production Operating System — v1.0.0",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the exact origins (e.g. http://localhost:5173)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Sprint 1 health-check endpoint (B-001)
+# Register metrics middleware at module level (not inside lifespan)
+# Adding middleware during lifespan startup raises:
+#   "Cannot add middleware after an application has started"
+register_metrics_middleware(app)
+
+
 @app.get("/health", tags=["System"])
 @app.get("/api/v1/health", tags=["System"])
 def health_check():
     return {
         "status": "healthy",
-        "milestone": 0,
-        "sprint": 1,
+        "milestone": 7,
         "version": "1.0.0",
         "services": {
             "event_ingestion": "active",
             "decision_feed": "active",
-            "audit_trail": "active"
-        }
+            "audit_trail": "active",
+        },
     }
 
-# Mount v1 api router
-app.include_router(api_router)
 
-# Mount all routers
+# Core v0.x routers
+app.include_router(api_router)
 app.include_router(webhooks_router)
 app.include_router(classifier_router)
 app.include_router(policy_router)
@@ -146,3 +171,12 @@ app.include_router(onboarding_router)
 app.include_router(persistence_router)
 app.include_router(stream_router)
 app.include_router(timeline_router)
+app.include_router(canary_agent_router)
+app.include_router(rerun_agent_router)
+
+# v1.0.0 routers
+app.include_router(test_selection_router)
+app.include_router(security_scanner_router)
+app.include_router(sso_router)
+app.include_router(compliance_router)
+app.include_router(orchestrator_agent_router)

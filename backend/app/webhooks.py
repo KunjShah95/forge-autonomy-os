@@ -22,7 +22,7 @@ from .event_bus import publish_event, NATS_ENABLED
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
-WEBHOOK_SECRET = os.environ["GITHUB_WEBHOOK_SECRET"]
+WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "forge-dev-secret")
 
 # ---------------------------------------------------------------------------
 # Signature verification
@@ -213,6 +213,8 @@ async def github_webhook(
     body = await request.body()
 
     # Verify signature
+    if not WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="GITHUB_WEBHOOK_SECRET not configured")
     if not verify_signature(body, x_hub_signature_256):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 

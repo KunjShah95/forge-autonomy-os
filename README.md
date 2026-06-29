@@ -3,7 +3,7 @@
 > **AI-Native Production Operating System** — Autonomous CI/CD recovery, incident command, architecture governance, and policy-bounded release orchestration.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/backend_tests-88_passing-brightgreen?style=for-the-badge" alt="Backend Tests">
+  <img src="https://img.shields.io/badge/backend_tests-121_passing-brightgreen?style=for-the-badge" alt="Backend Tests">
   <img src="https://img.shields.io/badge/frontend_tests-15_passing-brightgreen?style=for-the-badge" alt="Frontend Tests">
   <img src="https://img.shields.io/badge/typescript-5.8_clean-blue?style=for-the-badge" alt="TypeScript">
   <img src="https://img.shields.io/badge/react-18-61dafb?style=for-the-badge" alt="React 18">
@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/fastapi-1.0-009688?style=for-the-badge" alt="FastAPI">
   <img src="https://img.shields.io/badge/postgresql-17-4169E1?style=for-the-badge" alt="PostgreSQL 17">
   <img src="https://img.shields.io/badge/k8s_operator-kopf-326CE5?style=for-the-badge" alt="K8s Operator">
+  <img src="https://img.shields.io/badge/v1.0.0-production-7B2FBE?style=for-the-badge" alt="v1.0.0">
 </p>
 
 ---
@@ -19,7 +20,7 @@
 
 **Forge Autonomy OS** is an AI-native orchestration platform that autonomously manages the full software production lifecycle. When a CI pipeline fails, Forge detects it, classifies the root cause, generates an auto-fix PR, evaluates safety policies, executes a guarded canary deployment, and logs the full audit trail — all without human intervention, with safety controls at every step.
 
-> **37 backend modules · 11 app pages · 51 REST API endpoints · 88 passing tests · 27 backlog items delivered across 7 architectural layers**
+> **43 backend modules · 25 app pages · 100+ REST API endpoints · 121 passing tests · 43 backlog items delivered across 8 milestones**
 
 ---
 
@@ -64,18 +65,21 @@ graph TB
     end
 
     subgraph Layer1["🧠 Layer 1: Classification & Context"]
-        CL["CI Failure Classifier<br/>dependency / config / flake · 0.95 conf"]
+        CL["CI Failure Classifier<br/>4 classes · dep/config/flake/perf · 0.95 conf"]
         GIT["GitHub API Client<br/>branch → commit → PR · real GitHub"]
-        GD["Architecture Guardian<br/>boundary violations · coupling · debt"]
-        RCA["Incident Commander RCA<br/>root cause · impact · mitigation · prevention"]
+        GD["Architecture Guardian<br/>boundary violations · coupling · debt · drift"]
+        RCA["Incident Commander RCA<br/>root cause · impact · cross-service chains"]
         CTX["Context Persistence<br/>incidents · ownership · service→team mapping"]
+        SS["Security Scanner (SAST)<br/>secrets · vuln deps · insecure config · CVSS"]
     end
 
     subgraph Layer2["⚡ Layer 2: Remediation & Recovery"]
         RP["Auto-fix PR Generation<br/>repair patches · templates · PR bodies"]
-        RN["Workflow Rerun<br/>orchestrate CI retries"]
+        RN["Workflow Rerun Agent<br/>autonomous rerun · flake analysis · escalation"]
         QT["Flaky Test Quarantine<br/>exponential backoff · jitter · quarantine rules"]
         TM["Remediation Templates<br/>versioned YAML · variable substitution"]
+        TS["Test Selection Agent<br/>impact-based · file mappings · dep chain"]
+        CNG["Canary Agent<br/>health eval · promote/hold/rollback · deploy intel"]
     end
 
     subgraph Layer3["🛡️ Layer 3: Safety & Policy"]
@@ -83,7 +87,8 @@ graph TB
         POC["Policy-as-Code Engine<br/>YAML conditions · rule evaluation"]
         RSK["Deployment Risk Scoring<br/>5-factor weighted · low→critical"]
         CAN["Canary Controller<br/>5% → 10% → 25% · auto-rollback"]
-        RBAC["Multi-tenant RBAC<br/>4 roles · tenant isolation · granular permissions"]
+        RBAC["Multi-tenant RBAC<br/>4 roles · SSO OIDC · tenant isolation"]
+        CP["Compliance Reporting<br/>SOC2 · ISO27001 · audit export JSON/CSV/MD"]
     end
 
     subgraph Layer4["📊 Layer 4: Observability"]
@@ -99,23 +104,28 @@ graph TB
     end
 
     subgraph Layer6["🤖 Layer 6: Automation & Orchestration"]
-        OP["K8s Operator (kopf)<br/>ForgeRemedy CRD · NATS-driven remediation"]
+        OP["K8s Operator (kopf)<br/>ForgeRemedy CRD · multi-cluster deploy"]
         PM["PM Agent<br/>backlog decomposition · sprints · blocker detection"]
         CH["Chaos Engineering<br/>5 fault types · resilience tests · scoring"]
         WF["Workflow Editor<br/>visual pipeline builder · 7-step seeded pipeline"]
         DEMO["Demo Controller<br/>4 deterministic failure scenarios"]
         RPL["Decision Replay Engine<br/>step-by-step · play/pause/reset"]
+        ORCH["Agent Orchestrator<br/>DAG workflows · parallel steps · retry"]
     end
 
     subgraph Layer7["🎨 Layer 7: Frontend — React 18 + TypeScript 5.8"]
         DASH["Dashboard<br/>events · decisions · incidents · audit"]
-        CICD["CI/CD Intel<br/>pipeline · classifier · retry controls"]
+        CICD["CI/CD Intel<br/>pipeline · rerun agent · retry controls"]
         AGT["AI Agents<br/>agent status · actions · confidence"]
         SP["PM Sprint Planning<br/>backlog · sprints · blockers"]
         OD["Pilot Dashboard<br/>6 KPI cards · autonomy metrics · tenants"]
         TL2["Collaboration Timeline<br/>agent activity · filters · charts"]
         WF2["Workflow Editor<br/>drag-and-drop pipeline canvas"]
         LOG["LogStream<br/>SSE live event feed · polling fallback"]
+        CDB["Canary Dashboard<br/>auto-rollback UI · deploy intelligence"]
+        SEC["Security Scanner<br/>SAST results · severity · code input"]
+        COMP["Compliance Portal<br/>SOC2/ISO controls · export reports"]
+        ORC["Orchestrator<br/>DAG pipeline · step execution · logs"]
     end
 
     %% Data flow
@@ -158,13 +168,13 @@ graph TB
 
     class Layer0,Layer1,Layer2,Layer3,Layer4,Layer5,Layer6,Layer7 layer
     class WH,NATS ingestion
-    class CL,GIT,GD,RCA,CTX ai
-    class RP,RN,QT,TM ai
-    class POL,POC,RSK,CAN,RBAC safety
+    class CL,GIT,GD,RCA,CTX,SS ai
+    class RP,RN,QT,TM,TS,CNG ai
+    class POL,POC,RSK,CAN,RBAC,CP safety
     class OTEL,SSE,TL obs
     class SQL,PG,SYNC db
-    class OP,PM,CH,WF,DEMO,RPL k8s
-    class DASH,CICD,AGT,SP,OD,TL2,WF2,LOG ui
+    class OP,PM,CH,WF,DEMO,RPL,ORCH k8s
+    class DASH,CICD,AGT,SP,OD,TL2,WF2,LOG,CDB,SEC,COMP,ORC ui
 ```
 
 ---
@@ -204,34 +214,38 @@ flowchart LR
 | **GitHub Webhooks** | `webhooks.py`  | HMAC-SHA256 verified ingestion for `pull_request`, `check_suite`, `workflow_run` events    | ✅          |
 | **NATS Event Bus**  | `event_bus.py` | Async pub/sub with JSON envelope; 5 built-in subjects; connect/publish/subscribe lifecycle | ✅ 15 tests |
 
-### 🧠 Layer 1: Classification & Context (5 modules)
+### 🧠 Layer 1: Classification & Context (6 modules)
 
-| Component                  | File                  | Description                                                                                        | Tests |
-| -------------------------- | --------------------- | -------------------------------------------------------------------------------------------------- | ----- |
-| **CI Failure Classifier**  | `classifier.py`       | 3-class: `dependency`, `config`, `flake` with regex pattern matching and confidence scoring        | ✅    |
-| **GitHub API Client**      | `github_client.py`    | Real branch creation, file commit, PR creation via GitHub REST API (Contents + Pulls endpoints)    | ✅    |
-| **Architecture Guardian**  | `guardian.py`         | Boundary violations, coupling issues, tech debt detection; service dependency graph; health scores | ✅    |
-| **Incident Commander RCA** | `incident_summary.py` | Root cause analysis from timeline evidence; confidence scoring with uncertainty tracking           | ✅    |
-| **Context Persistence**    | `context.py`          | Incidents CRUD + ownership mapping (service→team→slack_channel)                                    | ✅    |
+| Component                  | File                  | Description                                                                                                    | Tests |
+| -------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------- | ----- |
+| **CI Failure Classifier**  | `classifier.py`       | 4-class: `dependency`, `config`, `flake`, `performance_regression` with regex pattern matching & confidence     | ✅    |
+| **GitHub API Client**      | `github_client.py`    | Real branch creation, file commit, PR creation via GitHub REST API (Contents + Pulls endpoints)                | ✅    |
+| **Architecture Guardian**  | `guardian.py`         | Boundary violations, coupling, tech debt, **config drift detection**; service dependency graph; health scores  | ✅    |
+| **Incident Commander RCA** | `incident_summary.py` | Root cause analysis + **cross-service cascading failure chains**; blast radius; dependency maps                | ✅    |
+| **Context Persistence**    | `context.py`          | Incidents CRUD + ownership mapping (service→team→slack_channel)                                                | ✅    |
+| **Security Scanner**       | `security_scanner.py` | SAST: 12 secret patterns, 11 insecure configs, 3 vulnerable deps; CVSS scoring; 3 API endpoints               | ✅    |
 
-### ⚡ Layer 2: Remediation & Recovery (4 modules)
+### ⚡ Layer 2: Remediation & Recovery (6 modules)
 
-| Component                  | File              | Description                                                                                                       | Tests |
-| -------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- | ----- |
-| **Auto-fix PR Generation** | `repair.py`       | Template-based fix patches for dependency/config/flake failures; full PR body generation                          | ✅    |
-| **Workflow Rerun**         | `orchestrator.py` | CI workflow re-triggering with optional config per branch                                                         | ✅    |
-| **Flaky Test Quarantine**  | `quarantine.py`   | Exponential backoff with jitter (Fn `0.5 * 2^n + random(0, jitter)`); quarantine rules CRUD; test status tracking | ✅    |
-| **Remediation Templates**  | `templates.py`    | 6 versioned YAML templates (npm, pip, config, flake, yaml, dockerfile); variable substitution; YAML validation    | ✅    |
+| Component                     | File                | Description                                                                                                                    | Tests       |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| **Auto-fix PR Generation**    | `repair.py`         | Template-based fix patches for dependency/config/flake failures; full PR body generation                                       | ✅          |
+| **Workflow Rerun Agent**      | `rerun_agent.py`    | Autonomous CI rerun decisions; flaky test analysis; exponential backoff with auto-escalation; 8 API endpoints                  | ✅          |
+| **Flaky Test Quarantine**     | `quarantine.py`     | Exponential backoff with jitter; quarantine rules CRUD; test status tracking                                                   | ✅          |
+| **Remediation Templates**     | `templates.py`      | 6 versioned YAML templates (npm, pip, config, flake, yaml, dockerfile); variable substitution; YAML validation                 | ✅          |
+| **Test Selection Agent**      | `test_selection.py` | Impact-based test selection; 21 file-to-test mappings; module dep chain impact; commit message analysis                        | ✅          |
+| **Canary Agent**              | `canary_agent.py`   | Autonomous canary monitoring; health eval (error rate, p99, burn rate, traffic); promote/hold/rollback decisions; deploy intel | ✅          |
 
-### 🛡️ Layer 3: Safety & Policy (5 modules)
+### 🛡️ Layer 3: Safety & Policy (6 modules)
 
-| Component                   | File               | Description                                                                                                             | Tests |
-| --------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- | ----- |
-| **A/B/C Action Policy**     | `policy.py`        | 3-tier: Class A (suggest, risk≥70), Class B (approve, risk≥40), Class C (auto, risk<20)                                 | ✅    |
-| **Policy-as-Code Engine**   | `policy_engine.py` | YAML-defined policies; condition-based rule evaluation; 2 seeded policies (production-safety, payment-services)         | ✅    |
-| **Deployment Risk Scoring** | `risk.py`          | 5-factor weighted model: files (30%), criticality (25%), config (20%), DB migration (15%), frequency (10%)              | ✅    |
-| **Canary Controller**       | `canary.py`        | 3-stage progression (5%→10%→25%); configurable bake times; auto-rollback on burn rate > 2.0                             | ✅    |
-| **Multi-tenant RBAC**       | `rbac.py`          | 4 roles (admin, operator, engineer, viewer); 3 tenants; permission granularity `action:*`, `deploy:*`, `incidents:view` | ✅    |
+| Component                   | File               | Description                                                                                                                       | Tests |
+| --------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **A/B/C Action Policy**     | `policy.py`        | 3-tier: Class A (suggest, risk≥70), Class B (approve, risk≥40), Class C (auto, risk<20)                                          | ✅    |
+| **Policy-as-Code Engine**   | `policy_engine.py` | YAML-defined policies; condition-based rule evaluation; 2 seeded policies (production-safety, payment-services)                   | ✅    |
+| **Deployment Risk Scoring** | `risk.py`          | 5-factor weighted model: files (30%), criticality (25%), config (20%), DB migration (15%), frequency (10%)                       | ✅    |
+| **Canary Controller**       | `canary.py`        | 3-stage progression (5%→10%→25%); configurable bake times; auto-rollback on burn rate > 2.0                                      | ✅    |
+| **Multi-tenant RBAC + SSO** | `rbac.py` `sso.py` | 4 roles (admin, operator, engineer, viewer); OIDC/OAuth2 SSO (Google, GitHub, Azure AD, custom); SAML config; session management | ✅    |
+| **Compliance Reporting**    | `compliance.py`    | 14 SOC2 + 7 ISO27001 controls; report generation; multi-format export (JSON, CSV, markdown); audit stats                         | ✅    |
 
 ### 📊 Layer 4: Observability (3 modules)
 
@@ -249,39 +263,44 @@ flowchart LR
 | **PostgreSQL (asyncpg)** | `pg_persistence.py`   | asyncpg connection pool (min=2, max=10); SQLAlchemy metadata for all 18 entities; Alembic migrations; auto-schema creation | ✅    |
 | **Persistence Sync**     | `persistence_sync.py` | 14 sync functions bridging in-memory ↔ SQLite; startup load; silent fallback                                               | ✅    |
 
-### 🤖 Layer 6: Automation & Orchestration (6 modules)
+### 🤖 Layer 6: Automation & Orchestration (7 modules)
 
-| Component                  | File           | Description                                                                                                                     | Tests       |
-| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **K8s Operator**           | `operator.py`  | kopf-based with ForgeRemedy CRD; NATS-driven remediation dispatcher; standalone dev mode                                        | ✅          |
-| **PM Agent**               | `pm_agent.py`  | Backlog decomposition from NL descriptions; sprint plan generation with velocity factor; blocker detection from CI/CD telemetry | ✅          |
-| **Chaos Engineering**      | `chaos.py`     | 5 fault types (latency, error, dependency_failure, resource_exhaustion, network_partition); resilience test CRUD + execution    | ✅ 17 tests |
-| **Workflow Editor**        | `workflows.py` | Backend CRUD + 7-step seeded CI/CD pipeline with execute endpoint                                                               | ✅          |
-| **Demo Controller**        | `demo.py`      | 4 deterministic failure scenarios (dependency, config, flake, latency); live + replay modes                                     | ✅          |
-| **Decision Replay Engine** | `replay.py`    | Step-by-step replay sessions with play/pause/reset; timeline evidence per step                                                  | ✅          |
+| Component                   | File                  | Description                                                                                                                              | Tests       |
+| --------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **K8s Operator**            | `operator.py`         | kopf-based with ForgeRemedy CRD; NATS-driven remediation dispatcher; **multi-cluster deployment** (staging-us, prod-us, prod-eu)         | ✅          |
+| **PM Agent**                | `pm_agent.py`         | Backlog decomposition from NL descriptions; sprint plan generation with velocity factor; blocker detection from CI/CD telemetry          | ✅          |
+| **Chaos Engineering**       | `chaos.py`            | 5 fault types (latency, error, dependency_failure, resource_exhaustion, network_partition); resilience test CRUD + execution              | ✅ 17 tests |
+| **Workflow Editor**         | `workflows.py`        | Backend CRUD + 7-step seeded CI/CD pipeline with execute endpoint                                                                        | ✅          |
+| **Agent Orchestrator**      | `orchestrator_agent.py` | DAG-based workflow orchestration; 3 predefined workflows; dep graph resolution; parallel step execution; exponential retry                | ✅          |
+| **Demo Controller**         | `demo.py`             | 4 deterministic failure scenarios (dependency, config, flake, latency); live + replay modes                                               | ✅          |
+| **Decision Replay Engine**  | `replay.py`           | Step-by-step replay sessions with play/pause/reset; timeline evidence per step                                                            | ✅          |
 
-### 🎨 Layer 7: Frontend (12 pages — including app shell + public routes)
+### 🎨 Layer 7: Frontend (25 pages — including app shell + public routes)
 
-| Page                       | File                        | Description                                                                                          |
-| -------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Dashboard**              | `Dashboard.tsx`             | Events feed, decisions log, incident display, audit trail, canary status, policy stats               |
-| **CI/CD Intel**            | `CICD.tsx`                  | Pipeline visualization, classifier integration, failure injection, repair generation, retry controls |
-| **AI Agents**              | `Agents.tsx`                | Agent cards (SRE, DevOps, Guardian), confidence scores, action history, replay engine                |
-| **Architecture**           | `Architecture.tsx`          | Guardian service graph with D3 visualization, health scores, findings with severity colors           |
-| **Incidents**              | `Incidents.tsx`             | Incident list with severity colors, RCA summary panel, timeline evidence                             |
-| **Analytics**              | `Analytics.tsx`             | Classifier analysis, policy evaluation statistics, decision distribution charts                      |
-| **Workflows**              | `Workflows.tsx`             | Drag-and-drop visual pipeline canvas, node properties, execute controls                              |
-| **PM Sprint Planning**     | `SprintPlanning.tsx`        | 3-tab layout: Backlog / Sprints / Blockers; AI decomposition; sprint plan generator                  |
-| **Pilot Dashboard**        | `PilotDashboard.tsx`        | 6 KPI cards (uptime, MTTR, MTTD, CFR, deploys/day, coverage), service health, autonomy metrics       |
-| **Collaboration Timeline** | `CollaborationTimeline.tsx` | Chronological agent activity feed, agent filter chips, decision distribution bar chart               |
-| **Policy Management**      | `PolicyManagement.tsx`      | Policy CRUD, rule editor, evaluate panel with risk context input                                     |
-| **Onboarding**             | `Onboarding.tsx`            | Tenant readiness checklist, setup progress tracking                                                  |
+| Page                       | File                        | Description                                                                                         |
+| -------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Dashboard**              | `Dashboard.tsx`             | Events feed, decisions log, incident display, audit trail, canary status, policy stats              |
+| **CI/CD Intel**            | `CICD.tsx`                  | Pipeline visualization, classifier integration, rerun agent panel, failure patterns, workflow history|
+| **AI Agents**              | `Agents.tsx`                | Agent cards (SRE, DevOps, Guardian), confidence scores, action history, replay engine               |
+| **Architecture**           | `Architecture.tsx`          | Guardian service graph, service comparison grid, layered findings, check timeline, discovery wizard |
+| **Incidents**              | `Incidents.tsx`             | Incident list, RCA summary, cross-service cascading failure chains, dependency maps                 |
+| **Analytics**              | `Analytics.tsx`             | Classifier analysis, policy evaluation statistics, decision distribution charts                     |
+| **Workflows**              | `Workflows.tsx`             | Drag-and-drop visual pipeline canvas, node properties, execute controls                             |
+| **PM Sprint Planning**     | `SprintPlanning.tsx`        | 3-tab layout: Backlog / Sprints / Blockers; AI decomposition; sprint plan generator                 |
+| **Pilot Dashboard**        | `PilotDashboard.tsx`        | 6 KPI cards (uptime, MTTR, MTTD, CFR, deploys/day, coverage), service health, autonomy metrics      |
+| **Collaboration Timeline** | `CollaborationTimeline.tsx` | Chronological agent activity feed, agent filter chips, decision distribution bar chart              |
+| **Policy Management**      | `PolicyManagement.tsx`      | Policy CRUD, rule editor, evaluate panel with risk context input                                    |
+| **Onboarding**             | `Onboarding.tsx`            | Tenant readiness checklist, setup progress tracking                                                 |
+| **Canary Dashboard**       | `CanaryDashboard.tsx`       | Auto-rollback UI, live canary monitoring, deploy intelligence, scenario simulator                   |
+| **Security Scanner**       | `Security.tsx`              | SAST scan input, result severity display, rule browser                                              |
+| **Compliance Portal**      | `Compliance.tsx`            | SOC2/ISO27001 control mapping, report generation, JSON/CSV/markdown export buttons                  |
+| **Agent Orchestrator**     | `Orchestrator.tsx`          | DAG workflow selection, step execution visualization, execution logs                                |
 
 ---
 
 ## 🔧 Tech Stack
 
-### Backend — Python 3.13 (37 modules)
+### Backend — Python 3.13 (43 modules)
 
 | Category          | Technologies                                            |
 | ----------------- | ------------------------------------------------------- |
@@ -289,11 +308,12 @@ flowchart LR
 | **Databases**     | asyncpg (PostgreSQL 17), SQLite 3, Alembic 1.14         |
 | **Observability** | OpenTelemetry SDK, OTLP gRPC, Prometheus metrics        |
 | **Messaging**     | NATS (nats-py 2.6), SSE streaming                       |
-| **Kubernetes**    | kopf 1.37 (K8s operator framework)                      |
+| **Kubernetes**    | kopf 1.37 (K8s operator framework), multi-cluster       |
+| **Security**      | SAST scanning, CVSS scoring, OIDC/OAuth2 SSO            |
 | **Testing**       | pytest 8.3, httpx 0.28 (TestClient)                     |
-| **API**           | 51 REST endpoints · 15 domains · 30+ API client methods |
+| **API**           | 100+ REST endpoints · 30+ domains · 60+ API client methods |
 
-### Frontend — React 18 + TypeScript 5.8 (21 pages + 38 UI components)
+### Frontend — React 18 + TypeScript 5.8 (25 pages + 38 UI components)
 
 | Category      | Technologies                                                        |
 | ------------- | ------------------------------------------------------------------- |
@@ -303,14 +323,15 @@ flowchart LR
 | **Styling**   | Tailwind CSS 3.4, shadcn/ui (38 Radix primitives), Framer Motion 12 |
 | **Charts**    | Recharts 2.15, D3 visualization                                     |
 | **Testing**   | Vitest 3, React Testing Library, jsdom                              |
-| **Build**     | Vite 5 production bundle (2939 modules, 1.9 MB JS)                  |
+| **Build**     | Vite 5 production bundle (2943 modules, 1.9 MB JS)                  |
 
 ### Infrastructure
 
 | Component            | Technology                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------- |
 | **Containerization** | Docker + docker-compose (3 services)                                                |
-| **K8s Deployment**   | 7 manifests (CRD, operator, backend, frontend, NATS, OTEL collector, kustomization) |
+| **K8s Deployment**   | 9 manifests (CRD, operator, backend, frontend, NATS, OTEL collector, cluster config)|
+| **Multi-cluster**    | 3 clusters (staging-us, production-us, production-eu) with env-specific sizing      |
 | **Database**         | PostgreSQL 17 (Alpine), persistent volume, health checks                            |
 | **CI/CD**            | GitHub Actions (backend + frontend pipeline)                                        |
 
@@ -321,19 +342,26 @@ flowchart LR
 ```
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                 # App bootstrap + 12 routers
+│   │   ├── main.py                 # App bootstrap + 17 routers
 │   │   ├── api.py                  # Events/Decisions/Audit CRUD (5 endpoints)
 │   │   ├── schemas.py             # Pydantic models (Event, Decision, Audit, Risk, etc.)
-│   │   ├── classifier.py          # 3-class CI failure classifier
+│   │   ├── classifier.py          # 4-class CI failure classifier (+ perf regression)
 │   │   ├── repair.py              # Auto-fix PR patch generation
 │   │   ├── webhooks.py            # GitHub webhook ingestion (HMAC-SHA256)
 │   │   ├── orchestrator.py        # Workflow rerun orchestration
 │   │   ├── canary.py              # Canary controller (3-stage, auto-rollback)
+│   │   ├── canary_agent.py        # Canary agent (autonomous monitoring, decisions)
+│   │   ├── rerun_agent.py         # Workflow rerun agent (flake analysis, escalation)
+│   │   ├── test_selection.py      # Impact-based test selection agent
+│   │   ├── security_scanner.py    # SAST security scanning (secrets, deps, configs)
+│   │   ├── sso.py                 # Enterprise SSO/OIDC authentication
+│   │   ├── compliance.py          # SOC2/ISO27001 compliance reporting
+│   │   ├── orchestrator_agent.py  # DAG-based agent orchestrator
 │   │   ├── risk.py                # 5-factor deployment risk scoring
 │   │   ├── policy.py              # A/B/C action class policy
 │   │   ├── policy_engine.py       # YAML policy-as-code engine
-│   │   ├── guardian.py            # Architecture guardian (boundary, coupling, debt)
-│   │   ├── incident_summary.py    # Incident commander RCA
+│   │   ├── guardian.py            # Architecture guardian (+ config drift detection)
+│   │   ├── incident_summary.py    # Incident commander RCA (+ cross-service chains)
 │   │   ├── context.py             # Incidents + ownership persistence
 │   │   ├── pm_agent.py            # PM agent (backlog, sprints, blockers)
 │   │   ├── timeline.py            # Cross-agent collaboration timeline
@@ -354,37 +382,42 @@ flowchart LR
 │   │   ├── persistence_sync.py    # In-memory ↔ SQLite sync adapter
 │   │   ├── pg_persistence.py      # PostgreSQL (asyncpg, async CRUD)
 │   │   ├── run_demo.py            # End-to-end demo script (--chaos flag)
-│   │   ├── test_all.py            # 56 integration tests
+│   │   ├── test_all.py            # 56 core integration tests
 │   │   ├── test_chaos.py          # 17 chaos engineering tests
-│   │   └── test_event_bus.py      # 15 NATS event bus tests
+│   │   ├── test_event_bus.py      # 15 NATS event bus tests
+│   │   └── test_v100.py           # 33 v1.0.0 module tests
 │   ├── alembic/                   # Database migrations (PostgreSQL)
 │   ├── Dockerfile                 # Multi-stage Python 3.13-slim
 │   └── requirements.txt           # Python dependencies
 ├── src/
-│   ├── App.tsx                    # Routes + providers (21 pages)
+│   ├── App.tsx                    # Routes + providers (25 pages)
 │   ├── main.tsx                   # Entry point
-│   ├── pages/                     # 11 app pages + 8 public pages
+│   ├── pages/                     # 17 app pages + 8 public pages
 │   │   ├── Dashboard.tsx          # Events, decisions, incidents, audit
-│   │   ├── CICD.tsx              # CI/CD pipeline + classifier
-│   │   ├── Agents.tsx            # AI agents + replay engine
-│   │   ├── Architecture.tsx      # Guardian service graph
-│   │   ├── Incidents.tsx         # Incident list + RCA summaries
-│   │   ├── SprintPlanning.tsx    # PM agent (3-tab)
-│   │   ├── PilotDashboard.tsx    # KPIs + onboarding
+│   │   ├── CICD.tsx               # CI/CD pipeline + rerun agent panel
+│   │   ├── Agents.tsx             # AI agents + replay engine
+│   │   ├── Architecture.tsx       # Guardian service graph + comparison grid
+│   │   ├── Incidents.tsx          # Incident list + cross-service RCA chains
+│   │   ├── SprintPlanning.tsx     # PM agent (3-tab)
+│   │   ├── PilotDashboard.tsx     # KPIs + onboarding
 │   │   ├── CollaborationTimeline.tsx  # Agent activity feed
-│   │   ├── PolicyManagement.tsx  # Policy CRUD + evaluation
-│   │   └── Workflows.tsx         # Pipeline canvas
+│   │   ├── PolicyManagement.tsx   # Policy CRUD + evaluation
+│   │   ├── Workflows.tsx          # Pipeline canvas
+│   │   ├── CanaryDashboard.tsx    # Auto-rollback UI + deploy intel
+│   │   ├── Security.tsx           # SAST security scanner
+│   │   ├── Compliance.tsx         # SOC2/ISO compliance portal
+│   │   └── Orchestrator.tsx       # DAG workflow orchestrator
 │   ├── components/               # 38 shadcn/ui components
 │   │   ├── ui/                   # Button, card, dialog, etc.
 │   │   ├── layout/               # AppShell, Sidebar, Topbar
 │   │   └── LogStream.tsx         # SSE-powered live feed
 │   ├── lib/
-│   │   ├── apiClient.ts          # 30+ API methods with mock fallback
+│   │   ├── apiClient.ts          # 60+ API methods with mock fallback
 │   │   ├── mock.ts               # Mock seed data
 │   │   └── utils.ts              # Utilities
 │   └── test/                     # 15 frontend tests
 ├── deploy/
-│   └── kubernetes/               # 7 K8s manifests
+│   └── kubernetes/               # 9 K8s manifests
 │       ├── crd.yaml              # ForgeRemedy CRD
 │       ├── operator-deployment.yaml  # kopf operator
 │       ├── backend-deployment.yaml
@@ -392,12 +425,14 @@ flowchart LR
 │       ├── nats-deployment.yaml
 │       ├── otel-collector.yaml
 │       ├── kustomization.yaml
-│       └── deploy.sh             # 7-step deployment script
+│       ├── cluster-config.yaml   # Multi-cluster profiles
+│       ├── deploy.sh             # 7-step deployment script
+│       └── deploy-multi-cluster.sh  # Multi-cluster deployment
 ├── docs/
 │   ├── ARCHITECTURE.md           # Full Mermaid architecture
-│   ├── IMPLEMENTATION-BACKLOG.md # 27 backlog items
+│   ├── IMPLEMENTATION-BACKLOG.md # 43 backlog items
 │   ├── PIPELINE.md               # Production pipeline
-│   ├── ROADMAP.md                # Multi-milestone roadmap
+│   ├── ROADMAP.md                # 8-milestone roadmap
 │   └── DEMO-RUNBOOK.md           # Demo runbook
 ├── docker-compose.yml            # PostgreSQL + backend + frontend
 └── package.json
@@ -482,12 +517,12 @@ Adds 11 additional chaos checks:
 
 ## 🧪 Testing & Verification
 
-### Backend (88 tests — all passing)
+### Backend (121 tests — all passing)
 
 ```bash
 cd backend
-python -m pytest app/test_all.py app/test_chaos.py app/test_event_bus.py -v
-# 88 passed in 3.9s
+python -m pytest app/test_all.py app/test_chaos.py app/test_event_bus.py app/test_v100.py -v
+# 121 passed in 4.2s
 ```
 
 ### Frontend (15 tests — all passing)
@@ -508,7 +543,7 @@ npx tsc --noEmit
 
 ```bash
 npx vite build
-# 2939 modules bundled in 19.6s
+# 2943 modules bundled in 14.2s
 # Output: dist/ (1.9 MB JS, 0 errors)
 ```
 
@@ -604,38 +639,42 @@ spec:
 
 | Document                                                          | Description                                                   |
 | ----------------------------------------------------------------- | ------------------------------------------------------------- |
-| **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)**                     | Full 7-layer Mermaid diagram with component IDs and data flow |
-| **[PIPELINE.md](./docs/PIPELINE.md)**                             | AI-native production pipeline — 8-step control loop           |
-| **[ROADMAP.md](./docs/ROADMAP.md)**                               | 6-milestone delivery roadmap with exit criteria               |
-| **[IMPLEMENTATION-BACKLOG.md](./docs/IMPLEMENTATION-BACKLOG.md)** | All 27 backlog items with detailed acceptance criteria        |
-| **[DEMO-RUNBOOK.md](./docs/DEMO-RUNBOOK.md)**                     | Complete 10-minute demo flow for investors/judges             |
+| **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)**                     | Full 7-layer Mermaid diagram — 43 modules across Ingestion, Context, Recovery, Safety, Observability, Persistence, Automation, Frontend |
+| **[PIPELINE.md](./docs/PIPELINE.md)**                             | AI-native production pipeline — 7-stage autonomous control loop with all quality gates operational |
+| **[ROADMAP.md](./docs/ROADMAP.md)**                               | Complete delivery roadmap — 11 versions across 8 milestones, from scaffold to v1.0.0 production |
+| **[IMPLEMENTATION-BACKLOG.md](./docs/IMPLEMENTATION-BACKLOG.md)** | All 43 backlog items (B-001 through B-046) with detailed acceptance criteria and delivery notes |
+| **[DEMO-RUNBOOK.md](./docs/DEMO-RUNBOOK.md)**                     | Complete 12-15 minute demo flow covering all 25 pages and v1.0.0 enterprise features |
 
 ---
 
 ## 📊 Key Metrics
 
-| Metric               | Value                                                                          |
-| -------------------- | ------------------------------------------------------------------------------ |
-| Backend modules      | 37 Python modules                                                              |
-| Frontend pages       | 11 app pages + 8 public pages + NotFound                                       |
-| REST API endpoints   | 51 across 15 domains                                                           |
-| Backend tests        | 88 (all passing)                                                               |
-| Frontend tests       | 15 (all passing)                                                               |
-| shadcn/ui components | 38 Radix primitives                                                            |
-| NPM dependencies     | ~50 packages                                                                   |
-| Python dependencies  | ~15 packages                                                                   |
-| Vite build           | 2,939 modules, 1.9 MB                                                          |
-| TypeScript errors    | 0                                                                              |
-| Backlog items        | 27 delivered                                                                   |
-| Architecture layers  | 7 layers                                                                       |
-| K8s manifests        | 7 files                                                                        |
-| DB tables (SQLite)   | 18 auto-created                                                                |
-| DB migration (PG)    | Alembic with 1 migration                                                       |
-| CI failure classes   | 3 (dependency, config, flake)                                                  |
-| Fault types (chaos)  | 5 (latency, error, dependency_failure, resource_exhaustion, network_partition) |
-| RBAC roles           | 4 (admin, operator, engineer, viewer)                                          |
-| Canary stages        | 3 (5% → 10% → 25%)                                                             |
-| Demo scenarios       | 4 deterministic failures                                                       |
+| Metric               | Value                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| Backend modules      | 43 Python modules                                                                    |
+| Frontend pages       | 17 app pages + 8 public pages + NotFound                                             |
+| REST API endpoints   | 100+ across 30+ domains                                                              |
+| Backend tests        | 121 (all passing)                                                                    |
+| Frontend tests       | 15 (all passing)                                                                     |
+| shadcn/ui components | 38 Radix primitives                                                                  |
+| NPM dependencies     | ~50 packages                                                                         |
+| Python dependencies  | ~15 packages                                                                         |
+| Vite build           | 2,943 modules, 1.9 MB                                                                |
+| TypeScript errors    | 0                                                                                    |
+| Backlog items        | 43 delivered across 8 milestones                                                     |
+| Architecture layers  | 7 layers                                                                             |
+| K8s manifests        | 9 files                                                                              |
+| Multi-cluster        | 3 clusters (staging-us, production-us, production-eu)                                |
+| DB tables (SQLite)   | 18 auto-created                                                                      |
+| DB migration (PG)    | Alembic with 1 migration                                                             |
+| CI failure classes   | 4 (dependency, config, flake, performance_regression)                                |
+| Fault types (chaos)  | 5 (latency, error, dependency_failure, resource_exhaustion, network_partition)       |
+| RBAC roles           | 4 (admin, operator, engineer, viewer) + SSO OIDC providers                           |
+| Canary stages        | 3 (5% → 10% → 25%) + autonomous agent promote/hold/rollback                          |
+| Demo scenarios       | 4 deterministic failures                                                             |
+| Security patterns    | 26 SAST patterns (secrets 12, configs 11, deps 3)                                    |
+| Compliance controls  | 21 (14 SOC2 + 7 ISO27001), multi-format export                                       |
+| Export formats       | JSON, CSV, Markdown                                                                  |
 
 ---
 

@@ -35,10 +35,14 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 WEBHOOK_SECRET = os.environ["GITHUB_WEBHOOK_SECRET"]
-client = TestClient(app)
 _ok = "  [PASS]"
 _fail = "  [FAIL]"
 _step_counter = 0
+
+# NOTE: TestClient(app) must be used as a context manager to trigger the
+# FastAPI lifespan (which runs setup_telemetry, SQLite load, etc.).
+# Without it, the /metrics endpoint and other startup-dependent features
+# are never registered. The context manager is created in main_with_args().
 
 
 def step(name: str) -> None:
@@ -63,7 +67,7 @@ def _sign(payload: bytes) -> str:
     return f"sha256={expected}"
 
 
-def _chaos_section(client) -> tuple:
+def _chaos_section(client) -> list:
     """Run chaos engineering fault injection + resilience tests."""
     results = []
 
@@ -72,7 +76,6 @@ def _chaos_section(client) -> tuple:
     print("  CHAOS ENGINEERING DEMO")
     print("=" * 60)
 
-    # ------------------------------------------------------------------
     sub_step = 0
     injected_faults = []
 
@@ -216,7 +219,8 @@ def _chaos_section(client) -> tuple:
     return results
 
 
-def main():
+def _run_demo(client) -> int:
+    """Execute the core 7-step demo flow using the given TestClient."""
     trace_id = None
 
     print()
@@ -444,41 +448,49 @@ def main():
     return 0 if all_pass else 1
 
 
+def main():
+    """Synchronous wrapper used by external callers (main_with_args, tests)."""
+    with TestClient(app) as client:
+        return _run_demo(client)
+
+
 def main_with_args():
+    """Entry point with argparse — wraps everything in a TestClient context manager."""
     parser = argparse.ArgumentParser(description="Forge Autonomy OS Demo")
     parser.add_argument("--chaos", action="store_true",
                         help="Include chaos engineering fault injection + resilience tests")
     args = parser.parse_args()
 
-    exit_code = main()
+    with TestClient(app) as client:
+        exit_code = _run_demo(client)
 
-    if args.chaos and exit_code == 0:
-        chaos_results = _chaos_section(client)
+        if args.chaos and exit_code == 0:
+            chaos_results = _chaos_section(client)
+
+            print()
+            print("+-----------------------------------------------------------------+")
+            print("|              Chaos Engineering Demo Results                     |")
+            print("+-----------------------------------------------------------------+")
+            print()
+
+            chaos_pass = True
+            for label, ok in chaos_results:
+                icon = _ok if ok else _fail
+                chaos_pass = chaos_pass and ok
+                print(f"  {icon} {label}")
+
+            print()
+            if chaos_pass:
+                print(f"  ** Chaos Engineering PASSED - all {len(chaos_results)} checks passed!")
+            else:
+                print(f"  ** Chaos Engineering FAILED - some checks did not pass.")
+                exit_code = 1
 
         print()
-        print("+-----------------------------------------------------------------+")
-        print("|              Chaos Engineering Demo Results                     |")
-        print("+-----------------------------------------------------------------+")
+        print(f"  Completed at: {datetime.now(timezone.utc).isoformat()}")
         print()
 
-        chaos_pass = True
-        for label, ok in chaos_results:
-            icon = _ok if ok else _fail
-            chaos_pass = chaos_pass and ok
-            print(f"  {icon} {label}")
-
-        print()
-        if chaos_pass:
-            print(f"  ** Chaos Engineering PASSED - all {len(chaos_results)} checks passed!")
-        else:
-            print(f"  ** Chaos Engineering FAILED - some checks did not pass.")
-            exit_code = 1
-
-    print()
-    print(f"  Completed at: {datetime.now(timezone.utc).isoformat()}")
-    print()
-
-    return exit_code
+        return exit_code
 
 
 if __name__ == "__main__":

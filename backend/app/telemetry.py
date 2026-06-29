@@ -133,9 +133,24 @@ def register_metrics_endpoint(app: FastAPI) -> None:
 
 
 def setup_telemetry(app: FastAPI) -> None:
-    """One-call setup: tracing + metrics + instrument."""
+    """One-call setup: tracing + metrics + instrument.
+
+    NOTE: Middleware is NOT registered here — it must be registered at module
+    level in main.py before the app starts handling requests. Adding middleware
+    inside a lifespan callback raises "Cannot add middleware after application
+    has started". Call register_metrics_middleware(app) directly in main.py.
+    """
     setup_tracing(app)
     setup_metrics(app)
-    app.middleware("http")(metrics_middleware)
     register_metrics_endpoint(app)
     print("[Telemetry] OpenTelemetry fully initialized")
+
+
+def register_metrics_middleware(app: FastAPI) -> None:
+    """Register the metrics-counting middleware.
+
+    Must be called at module level (not inside lifespan) so the middleware
+    stack is built before the application starts accepting requests.
+    """
+    if METRICS_ENABLED:
+        app.middleware("http")(metrics_middleware)

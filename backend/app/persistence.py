@@ -200,7 +200,7 @@ CREATE INDEX IF NOT EXISTS idx_events_source ON events(source);
 CREATE INDEX IF NOT EXISTS idx_decisions_trace ON decisions(trace_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_service ON incidents(service);
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
-CREATE INDEX IF NOT EXISTS idx_backlog_status ON backlog_items(rowid);
+CREATE INDEX IF NOT EXISTS idx_backlog_created ON backlog_items(created_at);
 CREATE INDEX IF NOT EXISTS idx_canary_service ON canary_runs(service);
 CREATE INDEX IF NOT EXISTS idx_chaos_service ON chaos_faults(service);
 """
